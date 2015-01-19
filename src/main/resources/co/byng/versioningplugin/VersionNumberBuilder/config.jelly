@@ -1,0 +1,25 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    
+    <f:entry title="Path to the project's properties file" field="propertyFilePath">
+        <f:textbox default="version.properties"/>
+    </f:entry>
+    
+    <f:entry title="Environment variable for major version" field="majorEnvVariable">
+        <f:textbox/>
+    </f:entry>
+    
+    <f:entry title="Environment variable for minor version" field="minorEnvVariable">
+        <f:textbox/>
+    </f:entry>
+    
+    <f:entry title="Field to increment upon each build" field="fieldToIncrement">
+        <f:select name="fieldToIncrement">
+            <f:option selected="true" name="major" value="major">Major</f:option>
+            <f:option selected="true" name="minor" value="minor">Minor</f:option>
+            <f:option selected="true" name="build" value="build">Build</f:option>
+            <f:option selected="true" name="rc" value="rc">Release Candidate</f:option>
+        </f:select>
+    </f:entry>
+
+</j:jelly>
