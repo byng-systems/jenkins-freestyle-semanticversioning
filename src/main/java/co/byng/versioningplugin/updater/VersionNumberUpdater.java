@@ -88,7 +88,7 @@ public class VersionNumberUpdater {
         String envVariableName,
         int currentComponentVersion
     ) throws Exception, NumberFormatException {
-        if (!environment.containsKey(envVariableName)) {
+        if (envVariableName != null && !environment.containsKey(envVariableName)) {
             throw new Exception(
                 "Environment variable '" + envVariableName + "' is not set in the current context"
             );

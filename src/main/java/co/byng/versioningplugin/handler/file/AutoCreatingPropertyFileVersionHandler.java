@@ -37,7 +37,7 @@ import java.util.Properties;
  */
 public class AutoCreatingPropertyFileVersionHandler extends PropertyFileVersionHandler {
 
-    public static final String DEFAULT_DEFAULT_VERSION_STRING = "1.0.0";
+    public static final String DEFAULT_VERSION_STRING = "1.0.0";
     
     private String defaultVersionString;
 
@@ -64,13 +64,11 @@ public class AutoCreatingPropertyFileVersionHandler extends PropertyFileVersionH
     
     @Override
     public Version loadVersion() throws IOException {
-        if (!this.getPropertyFilePath().exists()) {
-            throw new FileNotFoundException("");
+        if (!this.propertyFilePath.exists()) {
+            this.saveVersion(Version.valueOf(DEFAULT_VERSION_STRING));
         }
         
         return super.loadVersion(); //To change body of generated methods, choose Tools | Templates.
     }
-    
-    
         
 }

@@ -30,9 +30,9 @@ import hudson.util.ListBoxModel;
  *
  * @author M.D.Ward <matthew.ward@byng-systems.com>
  */
-public final class OptionsProvider {
+public class OptionsProvider {
 
-    public static ListBoxModel doFillEnvVariableSubjectFieldItems() {
+    public ListBoxModel getEnvVariableSubjectFieldItems() {
         ListBoxModel model = new ListBoxModel();
 
         model.add("Major", VersionNumberUpdater.VersionComponent.MAJOR);
@@ -41,19 +41,19 @@ public final class OptionsProvider {
         return model;
     }
 
-    public static ListBoxModel doFillFieldToIncrementItems() {
-        ListBoxModel model = OptionsProvider.doFillEnvVariableSubjectFieldItems();
+    public ListBoxModel getFieldToIncrementItems() {
+        ListBoxModel model = this.getEnvVariableSubjectFieldItems();
 
         model.add("Patch", VersionNumberUpdater.VersionComponent.PATCH);
 
         return model;
     }
 
-    public static ListBoxModel doFillPreReleaseVersionItems() {
+    public ListBoxModel getPreReleaseVersionItems() {
         ListBoxModel model = new ListBoxModel();
 
         model.add(
-                "",
+                "(None/clear)",
                 VersionNumberUpdater.PreReleaseVersion.NONE
         );
 

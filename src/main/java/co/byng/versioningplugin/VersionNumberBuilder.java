@@ -1,6 +1,11 @@
 package co.byng.versioningplugin;
+import co.byng.versioningplugin.configuration.OptionsProvider;
 import co.byng.versioningplugin.configuration.VersioningConfiguration;
 import co.byng.versioningplugin.configuration.VersioningConfigurationProvider;
+import co.byng.versioningplugin.configuration.VersioningConfigurationWriteableProvider;
+import co.byng.versioningplugin.configuration.VersioningGlobalConfiguration;
+import co.byng.versioningplugin.configuration.VersioningGlobalConfigurationProvider;
+import co.byng.versioningplugin.configuration.VersioningGlobalConfigurationWriteableProvider;
 import co.byng.versioningplugin.handler.VersionCommittingInterface;
 import co.byng.versioningplugin.handler.VersionRetrievalInterface;
 import co.byng.versioningplugin.handler.file.AutoCreatingPropertyFileVersionHandler;
@@ -16,11 +21,12 @@ import hudson.model.BuildListener;
 import hudson.model.AbstractProject;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.BuildStepMonitor;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.File;
 import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -48,11 +54,11 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
     protected transient VersionNumberUpdater updater = new VersionNumberUpdater();
     protected transient VersionRetrievalInterface retriever;
     protected transient VersionCommittingInterface committer;
-    protected VersioningConfiguration configuration;
+    protected VersioningConfigurationWriteableProvider configuration;
     
     
     
-    public VersionNumberBuilder(VersioningConfiguration configuration) throws IllegalArgumentException {
+    public VersionNumberBuilder(VersioningConfigurationWriteableProvider configuration) throws IllegalArgumentException {
         if (configuration == null) {
             throw new IllegalArgumentException("Configuration cannot be given as null");
         }
@@ -78,6 +84,7 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
                 .setOverrideVersion(overrideVersion)
                 .setPropertyFilePath(propertyFilePath)
                 .setBaseMajorOnEnvVariable(baseMajorOnEnvVariable)
+                .setMajorEnvVariable(majorEnvVariable)
                 .setBaseMinorOnEnvVariable(baseMinorOnEnvVariable)
                 .setMinorEnvVariable(minorEnvVariable)
                 .setPreReleaseVersion(preReleaseVersion)
@@ -91,9 +98,10 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
             AbstractProject project = build.getProject();
             VersionCommittingInterface committer = this.lazyLoadCommitter(project);
             VersionRetrievalInterface retriever = this.lazyLoadRetriever(project);
-
+            VersionNumberUpdater updater = this.lazyLoadUpdater();
+            
             Version currentVersion;
-
+            
             if (this.getDoOverrideVersion()) {
                 currentVersion = Version.valueOf(this.getOverrideVersion());
                 committer.saveVersion(currentVersion);
@@ -108,14 +116,20 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
             }
 
             EnvVars environment = build.getEnvironment(listener);
+            Map<String, String> exportableEnvVars = new LinkedHashMap<String, String>();
             
-            environment.put(
+            exportableEnvVars.put(
                 this.getDescriptor().getPreviousVersionEnvVariable(),
                 currentVersion.toString()
             );
 
+            currentVersion = updater.incrementSingleVersionComponent(
+                currentVersion,
+                this.getFieldToIncrement()
+            );
+            
             if (this.getBaseMajorOnEnvVariable()) {
-                currentVersion = this.updater.updateMajorBasedOnEnvironmentVariable(
+                currentVersion = updater.updateMajorBasedOnEnvironmentVariable(
                     currentVersion,
                     environment,
                     this.getMajorEnvVariable()
@@ -123,41 +137,38 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
             }
 
             if (this.getBaseMinorOnEnvVariable()) {
-                currentVersion = this.updater.updateMinorBasedOnEnvironmentVariable(
+                currentVersion = updater.updateMinorBasedOnEnvironmentVariable(
                     currentVersion,
                     environment,
                     this.getMinorEnvVariable()
                 );
             }
             
-            currentVersion = this.updater.incrementSingleVersionComponent(
-                currentVersion,
-                this.getFieldToIncrement()
-            );
-            
             String preReleaseVersion;
             if ((preReleaseVersion = this.getPreReleaseVersion()) != null && !preReleaseVersion.isEmpty()) {
-                currentVersion = this.updater.setPreReleaseVersion(currentVersion, preReleaseVersion);
+                currentVersion = updater.setPreReleaseVersion(currentVersion, preReleaseVersion);
             }
             
             listener.getLogger().append("Updating to " + currentVersion + "\n");
             committer.saveVersion(currentVersion);
             
-            environment.put(
+            exportableEnvVars.put(
                 this.getDescriptor().getCurrentVersionEnvVariable(),
                 currentVersion.toString()
             );
             
+            build.addAction(new AddEnvVarsAction(exportableEnvVars));
+            
             return true;
 
         } catch (Throwable t) {
-            listener.error(t.getMessage());
+            t.printStackTrace(listener.getLogger());
         }
 
         return false;
     }
 
-    public VersioningConfiguration getConfiguration() {
+    public VersioningConfigurationWriteableProvider getConfiguration() {
         return configuration;
     }
 
@@ -169,11 +180,6 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
         return committer;
     }
 
-    @Override
-    public BuildStepMonitor getRequiredMonitorService() {
-        return super.getRequiredMonitorService();
-    }
-    
     public void setConfiguration(VersioningConfiguration configuration) {
         this.configuration = configuration;
     }
@@ -210,6 +216,14 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
         }
         
         return this.retriever;
+    }
+    
+    protected VersionNumberUpdater lazyLoadUpdater() {
+        if (this.updater == null) {
+            this.updater = new VersionNumberUpdater();
+        }
+        
+        return this.updater;
     }
     
     protected File getAbsolutePropertyPath(AbstractProject project)
@@ -282,19 +296,36 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
      * for the actual HTML fragment for the configuration screen.
      */
     @Extension
-    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
+    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> implements VersioningGlobalConfigurationProvider {
 
-        private String previousVersionEnvVariable = "PREVIOUS_VERSION_NUMBER";
-        private String currentVersionEnvVariable = "CURRENT_VERSION_NUMBER";
+        private VersioningGlobalConfigurationWriteableProvider globalConfiguration;
+        private OptionsProvider optionsProvider;
     
-        /**
-         * In order to load the persisted global configuration, you have to 
-         * call load() in the constructor.
-         */
-        public DescriptorImpl() {
+        public DescriptorImpl(
+            VersioningGlobalConfigurationWriteableProvider globalConfiguration,
+            OptionsProvider optionsProvider
+        ) {
+            if (globalConfiguration == null) {
+                throw new IllegalArgumentException("Global configuration cannot be given as a null object");
+            }
+            
+            if (optionsProvider == null) {
+                throw new IllegalArgumentException("Global configuration cannot be given as a null object");
+            }
+            
+            this.globalConfiguration = globalConfiguration;
+            this.optionsProvider = optionsProvider;
+            
             load();
         }
-
+        
+        public DescriptorImpl() {
+            this(
+                new VersioningGlobalConfiguration(),
+                new OptionsProvider()
+            );
+        }
+        
         /**
          * 
          * @param aClass
@@ -323,24 +354,48 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
             return "Update versioning";
         }
 
-        public String getPreviousVersionEnvVariable() {
-            return previousVersionEnvVariable;
+        public VersioningGlobalConfigurationWriteableProvider getGlobalConfiguration() {
+            return globalConfiguration;
         }
-
-        public String getCurrentVersionEnvVariable() {
-            return currentVersionEnvVariable;
+        
+        public void setGlobalConfiguration(VersioningGlobalConfigurationWriteableProvider globalConfiguration) {
+            this.globalConfiguration = globalConfiguration;
         }
     
         @Override
+        public String getPreviousVersionEnvVariable() {
+            return this.globalConfiguration.getPreviousVersionEnvVariable();
+        }
+
+        @Override
+        public String getCurrentVersionEnvVariable() {
+            return this.globalConfiguration.getCurrentVersionEnvVariable();
+        }
+        
+        public ListBoxModel doFillEnvVariableSubjectFieldItems() {
+            return this.optionsProvider.getEnvVariableSubjectFieldItems();
+        }
+
+        public ListBoxModel doFillFieldToIncrementItems() {
+            return this.optionsProvider.getFieldToIncrementItems();
+        }
+
+        public ListBoxModel doFillPreReleaseVersionItems() {
+            return this.optionsProvider.getPreReleaseVersionItems();
+        }
+
+        @Override
         public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
             
-            this.previousVersionEnvVariable = formData.getString("previousVersionEnvVariable");
-            this.currentVersionEnvVariable = formData.getString("currentVersionEnvVariable");
+            this.globalConfiguration
+                    .setPreviousVersionEnvVariable(formData.getString("previousVersionEnvVariable"))
+                    .setCurrentVersionEnvVariable(formData.getString("currentVersionEnvVariable"))
+            ;
             
             save();
             
             return super.configure(req,formData);
         }
-        
+
     }
 }

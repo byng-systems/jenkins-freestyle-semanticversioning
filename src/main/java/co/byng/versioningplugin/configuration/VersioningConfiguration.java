@@ -27,7 +27,7 @@ package co.byng.versioningplugin.configuration;
  *
  * @author M.D.Ward <matthew.ward@byng-systems.com>
  */
- public class VersioningConfiguration implements VersioningConfigurationProvider {
+ public class VersioningConfiguration implements VersioningConfigurationWriteableProvider {
     
     protected boolean doOverrideVersion = true;
     protected String overrideVersion;
@@ -84,55 +84,64 @@ package co.byng.versioningplugin.configuration;
         return fieldToIncrement;
     }
 
+    @Override
     public VersioningConfiguration setDoOverrideVersion(boolean doOverrideVersion) {
         this.doOverrideVersion = doOverrideVersion;
         
         return this;
     }
 
-    public VersioningConfiguration setOverrideVersion(String overrideVersion) {
+    @Override
+    public VersioningConfigurationWriteableProvider setOverrideVersion(String overrideVersion) {
         this.overrideVersion = overrideVersion;
         
         return this;
     }
 
-    public VersioningConfiguration setPropertyFilePath(String propertyFilePath) {
+    @Override
+    public VersioningConfigurationWriteableProvider setPropertyFilePath(String propertyFilePath) {
         this.propertyFilePath = propertyFilePath;
         
         return this;
     }
 
-    public VersioningConfiguration setBaseMajorOnEnvVariable(boolean baseMajorOnEnvVariable) {
+    @Override
+    public VersioningConfigurationWriteableProvider setBaseMajorOnEnvVariable(boolean baseMajorOnEnvVariable) {
         this.baseMajorOnEnvVariable = baseMajorOnEnvVariable;
         
         return this;
     }
 
-    public VersioningConfiguration setMajorEnvVariable(String majorEnvVariable) {
+    @Override
+    public VersioningConfigurationWriteableProvider setMajorEnvVariable(String majorEnvVariable) {
         this.majorEnvVariable = majorEnvVariable;
         
         return this;
     }
 
-    public VersioningConfiguration setBaseMinorOnEnvVariable(boolean baseMinorOnEnvVariable) {
+    @Override
+    public VersioningConfigurationWriteableProvider setBaseMinorOnEnvVariable(boolean baseMinorOnEnvVariable) {
         this.baseMinorOnEnvVariable = baseMinorOnEnvVariable;
         
         return this;
     }
 
-    public VersioningConfiguration setMinorEnvVariable(String minorEnvVariable) {
+    @Override
+    public VersioningConfigurationWriteableProvider setMinorEnvVariable(String minorEnvVariable) {
         this.minorEnvVariable = minorEnvVariable;
         
         return this;
     }
 
-    public VersioningConfiguration setPreReleaseVersion(String preReleaseVersion) {
+    @Override
+    public VersioningConfigurationWriteableProvider setPreReleaseVersion(String preReleaseVersion) {
         this.preReleaseVersion = preReleaseVersion;
         
         return this;
     }
 
-    public VersioningConfiguration setFieldToIncrement(String fieldToIncrement) {
+    @Override
+    public VersioningConfigurationWriteableProvider setFieldToIncrement(String fieldToIncrement) {
         this.fieldToIncrement = fieldToIncrement;
         
         return this;
