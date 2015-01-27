@@ -42,8 +42,10 @@ public class OptionsProvider {
     }
 
     public ListBoxModel getFieldToIncrementItems() {
-        ListBoxModel model = this.getEnvVariableSubjectFieldItems();
-
+        ListBoxModel model = new ListBoxModel();
+        
+        model.add("None (skip)", VersionNumberUpdater.VersionComponent.NONE);
+        model.addAll(this.getEnvVariableSubjectFieldItems());
         model.add("Patch", VersionNumberUpdater.VersionComponent.PATCH);
 
         return model;
@@ -53,7 +55,7 @@ public class OptionsProvider {
         ListBoxModel model = new ListBoxModel();
 
         model.add(
-                "(None/clear)",
+                "None (clear)",
                 VersionNumberUpdater.PreReleaseVersion.NONE
         );
 
@@ -70,6 +72,16 @@ public class OptionsProvider {
         model.add(
                 "Release candidate (rc)",
                 VersionNumberUpdater.PreReleaseVersion.RELEASE_CANDIDATE
+        );
+
+        model.add(
+                "Nightly (nightly)",
+                VersionNumberUpdater.PreReleaseVersion.NIGHTLY
+        );
+
+        model.add(
+                "Build (build)",
+                VersionNumberUpdater.PreReleaseVersion.BUILD
         );
 
         return model;

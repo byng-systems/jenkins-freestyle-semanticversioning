@@ -109,6 +109,7 @@ public class VersionNumberUpdater {
     
     
     public static class VersionComponent {
+        public static final String NONE = "";
         public static final String MAJOR = "major";
         public static final String MINOR = "minor";
         public static final String PATCH = "patch";
@@ -119,6 +120,8 @@ public class VersionNumberUpdater {
         public static final String ALPHA = "alpha";
         public static final String BETA = "beta";
         public static final String RELEASE_CANDIDATE = "rc";
+        public static final String NIGHTLY = "nightly";
+        public static final String BUILD = "build";
     }
     
 }
