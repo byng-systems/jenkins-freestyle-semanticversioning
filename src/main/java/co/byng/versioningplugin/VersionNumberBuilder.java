@@ -1,24 +1,30 @@
 package co.byng.versioningplugin;
-import co.byng.versioningplugin.handler.AutoCreatingPropertyFileHandler;
-import co.byng.versioningplugin.handler.PropertyHandler;
+import co.byng.versioningplugin.configuration.VersioningConfiguration;
+import co.byng.versioningplugin.configuration.VersioningConfigurationProvider;
+import co.byng.versioningplugin.handler.VersionCommittingInterface;
+import co.byng.versioningplugin.handler.VersionRetrievalInterface;
+import co.byng.versioningplugin.handler.file.AutoCreatingPropertyFileVersionHandler;
+import co.byng.versioningplugin.handler.file.PropertyFileIoHandler;
+import co.byng.versioningplugin.updater.VersionNumberUpdater;
+import com.github.zafarkhaja.semver.ParseException;
 import com.github.zafarkhaja.semver.Version;
 import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.Extension;
-import hudson.util.FormValidation;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.AbstractProject;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.BuildStepMonitor;
+import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import java.io.File;
+import java.io.IOException;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.QueryParameter;
-
-import javax.servlet.ServletException;
-import java.io.IOException;
+import org.kohsuke.stapler.StaplerRequest;
 
 /**
  * Sample {@link Builder}.
@@ -37,68 +43,231 @@ import java.io.IOException;
  *
  * @author Kohsuke Kawaguchi
  */
-public class VersionNumberBuilder extends Builder {
+public class VersionNumberBuilder extends Builder implements VersioningConfigurationProvider {
 
-    private final String propertyFilePath;
-    private final String majorEnvVariable;
-    private final String minorEnvVariable;
-    private final String fieldToIncrement;
+    protected transient VersionNumberUpdater updater = new VersionNumberUpdater();
+    protected transient VersionRetrievalInterface retriever;
+    protected transient VersionCommittingInterface committer;
+    protected VersioningConfiguration configuration;
     
     
     
-    /**
-     * 
-     * @param propertyFilePath
-     * @param majorEnvVariable
-     * @param minorEnvVariable
-     * @param fieldToIncrement 
-     */
+    public VersionNumberBuilder(VersioningConfiguration configuration) throws IllegalArgumentException {
+        if (configuration == null) {
+            throw new IllegalArgumentException("Configuration cannot be given as null");
+        }
+        
+        this.configuration = configuration;
+    }
+    
     @DataBoundConstructor
     public VersionNumberBuilder(
+        boolean doOverrideVersion,
+        String overrideVersion,
         String propertyFilePath,
+        boolean baseMajorOnEnvVariable,
         String majorEnvVariable,
+        boolean baseMinorOnEnvVariable,
         String minorEnvVariable,
+        String preReleaseVersion,
         String fieldToIncrement
-    ) {
-        this.propertyFilePath = propertyFilePath;
-        this.majorEnvVariable = majorEnvVariable;
-        this.minorEnvVariable = minorEnvVariable;
-        this.fieldToIncrement = fieldToIncrement;
+    ) throws IllegalArgumentException {
+        this(
+            new VersioningConfiguration()
+                .setDoOverrideVersion(doOverrideVersion)
+                .setOverrideVersion(overrideVersion)
+                .setPropertyFilePath(propertyFilePath)
+                .setBaseMajorOnEnvVariable(baseMajorOnEnvVariable)
+                .setBaseMinorOnEnvVariable(baseMinorOnEnvVariable)
+                .setMinorEnvVariable(minorEnvVariable)
+                .setPreReleaseVersion(preReleaseVersion)
+                .setFieldToIncrement(fieldToIncrement)
+        );
     }
     
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
-        
         try {
-            PropertyHandler handler = new AutoCreatingPropertyFileHandler(
-                this.propertyFilePath
-            );
+            AbstractProject project = build.getProject();
+            VersionCommittingInterface committer = this.lazyLoadCommitter(project);
+            VersionRetrievalInterface retriever = this.lazyLoadRetriever(project);
+
+            Version currentVersion;
+
+            if (this.getDoOverrideVersion()) {
+                currentVersion = Version.valueOf(this.getOverrideVersion());
+                committer.saveVersion(currentVersion);
+
+                this.configuration
+                    .setDoOverrideVersion(false)
+                    .setOverrideVersion(null)
+                ;
+                
+            } else {
+                currentVersion = retriever.loadVersion();
+            }
 
             EnvVars environment = build.getEnvironment(listener);
+            
+            environment.put(
+                this.getDescriptor().getPreviousVersionEnvVariable(),
+                currentVersion.toString()
+            );
 
-            Version.Builder builder = new Version.Builder();
-            builder.setNormalVersion(
-                environment.get(this.majorEnvVariable, "1")
-                + "."
-                + environment.get(this.minorEnvVariable, "0")
-                + ".0"
+            if (this.getBaseMajorOnEnvVariable()) {
+                currentVersion = this.updater.updateMajorBasedOnEnvironmentVariable(
+                    currentVersion,
+                    environment,
+                    this.getMajorEnvVariable()
+                );
+            }
+
+            if (this.getBaseMinorOnEnvVariable()) {
+                currentVersion = this.updater.updateMinorBasedOnEnvironmentVariable(
+                    currentVersion,
+                    environment,
+                    this.getMinorEnvVariable()
+                );
+            }
+            
+            currentVersion = this.updater.incrementSingleVersionComponent(
+                currentVersion,
+                this.getFieldToIncrement()
             );
             
-            builder.setPreReleaseVersion("rc");
-
-            environment.put("VERSION_NUMBER", builder.build().toString());
-            build.setDisplayName(environment.get("VERSION_NUMBER"));
+            String preReleaseVersion;
+            if ((preReleaseVersion = this.getPreReleaseVersion()) != null && !preReleaseVersion.isEmpty()) {
+                currentVersion = this.updater.setPreReleaseVersion(currentVersion, preReleaseVersion);
+            }
             
+            listener.getLogger().append("Updating to " + currentVersion + "\n");
+            committer.saveVersion(currentVersion);
+            
+            environment.put(
+                this.getDescriptor().getCurrentVersionEnvVariable(),
+                currentVersion.toString()
+            );
+            
+            return true;
+
         } catch (Throwable t) {
-            t.printStackTrace();
+            listener.error(t.getMessage());
         }
-        
-        return true;
+
+        return false;
     }
 
-    // Overridden for better type safety.
-    // If your plugin doesn't really define any property on Descriptor,
-    // you don't have to do this.
+    public VersioningConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    public VersionNumberUpdater getUpdater() {
+        return updater;
+    }
+
+    public VersionCommittingInterface getCommitter() {
+        return committer;
+    }
+
+    @Override
+    public BuildStepMonitor getRequiredMonitorService() {
+        return super.getRequiredMonitorService();
+    }
+    
+    public void setConfiguration(VersioningConfiguration configuration) {
+        this.configuration = configuration;
+    }
+    
+    public void setUpdater(VersionNumberUpdater updater) {
+        this.updater = updater;
+    }
+    
+    public void setCommitter(VersionCommittingInterface committer) {
+        this.committer = committer;
+    }
+
+    public void setRetriever(VersionRetrievalInterface retriever) {
+        this.retriever = retriever;
+    }
+    
+    protected VersionCommittingInterface lazyLoadCommitter(AbstractProject project) throws IOException {
+        if (this.committer == null) {
+            this.committer = new AutoCreatingPropertyFileVersionHandler(
+                new PropertyFileIoHandler(),
+                this.getAbsolutePropertyPath(project)
+            );
+        }
+        
+        return this.committer;
+    }
+
+    protected VersionRetrievalInterface lazyLoadRetriever(AbstractProject project) throws IOException {
+        if (this.retriever == null) {
+            this.retriever = new AutoCreatingPropertyFileVersionHandler(
+                new PropertyFileIoHandler(),
+                this.getAbsolutePropertyPath(project)
+            );
+        }
+        
+        return this.retriever;
+    }
+    
+    protected File getAbsolutePropertyPath(AbstractProject project)
+    {
+        File propertyFile;
+        
+        if ((propertyFile = new File(this.getPropertyFilePath())).isAbsolute()) {
+            return propertyFile;
+        }
+        
+        return new File(project.getRootDir(), this.getPropertyFilePath());
+    }
+
+    @Override
+    public boolean getDoOverrideVersion() {
+        return this.configuration.getDoOverrideVersion();
+    }
+
+    @Override
+    public String getOverrideVersion() {
+        return this.configuration.getOverrideVersion();
+    }
+
+    @Override
+    public String getPropertyFilePath() {
+        return this.configuration.getPropertyFilePath();
+    }
+
+    @Override
+    public boolean getBaseMajorOnEnvVariable() {
+        return this.configuration.getBaseMajorOnEnvVariable();
+    }
+
+    @Override
+    public String getMajorEnvVariable() {
+        return this.configuration.getMajorEnvVariable();
+    }
+
+    @Override
+    public boolean getBaseMinorOnEnvVariable() {
+        return this.configuration.getBaseMinorOnEnvVariable();
+    }
+
+    @Override
+    public String getMinorEnvVariable() {
+        return this.configuration.getMinorEnvVariable();
+    }
+
+    @Override
+    public String getPreReleaseVersion() {
+        return this.configuration.getPreReleaseVersion();
+    }
+
+    @Override
+    public String getFieldToIncrement() {
+        return this.configuration.getFieldToIncrement();
+    }
+    
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
@@ -112,17 +281,12 @@ public class VersionNumberBuilder extends Builder {
      * See <tt>src/main/resources/hudson/plugins/hello_world/HelloWorldBuilder/*.jelly</tt>
      * for the actual HTML fragment for the configuration screen.
      */
-    @Extension // This indicates to Jenkins that this is an implementation of an extension point.
+    @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
-        /**
-         * To persist global configuration information,
-         * simply store it in a field and call save().
-         *
-         * <p>
-         * If you don't want fields to be persisted, use <tt>transient</tt>.
-         */
-        private boolean useFrench;
 
+        private String previousVersionEnvVariable = "PREVIOUS_VERSION_NUMBER";
+        private String currentVersionEnvVariable = "CURRENT_VERSION_NUMBER";
+    
         /**
          * In order to load the persisted global configuration, you have to 
          * call load() in the constructor.
@@ -140,27 +304,43 @@ public class VersionNumberBuilder extends Builder {
             return true;
         }
 
+        public FormValidation doCheckOverrideVersion(@QueryParameter String overrideVersion) {
+            try {
+                Version.valueOf(overrideVersion);
+            } catch (ParseException ex) {
+                return FormValidation.error("Please enter a valid semantic version string");
+            }
+            
+            return FormValidation.ok();
+        }
+        
         /**
-         * This human readable name is used in the configuration screen.
+         * Returns the human readable name is used in the configuration screen
+         * @return human readable name is used in the configuration screen
          */
+        @Override
         public String getDisplayName() {
             return "Update versioning";
         }
 
+        public String getPreviousVersionEnvVariable() {
+            return previousVersionEnvVariable;
+        }
+
+        public String getCurrentVersionEnvVariable() {
+            return currentVersionEnvVariable;
+        }
+    
         @Override
         public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
             
-            /*// To persist global configuration information,
-            // set that to properties and call save().
-            useFrench = formData.getBoolean("useFrench");
-            // ^Can also use req.bindJSON(this, formData);
-            //  (easier when there are many fields; need set* methods for this, like setUseFrench)*/
+            this.previousVersionEnvVariable = formData.getString("previousVersionEnvVariable");
+            this.currentVersionEnvVariable = formData.getString("currentVersionEnvVariable");
             
             save();
             
             return super.configure(req,formData);
         }
-
+        
     }
 }
-

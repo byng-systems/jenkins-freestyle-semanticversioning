@@ -21,8 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package co.byng.versioningplugin.handler;
+package co.byng.versioningplugin.handler.file;
 
+import co.byng.versioningplugin.handler.file.PropertyFileVersionHandler;
 import com.github.zafarkhaja.semver.ParseException;
 import com.github.zafarkhaja.semver.Version;
 import java.io.File;
@@ -34,43 +35,42 @@ import java.util.Properties;
  *
  * @author matt
  */
-public class AutoCreatingPropertyFileHandler extends PropertyFileHandler {
+public class AutoCreatingPropertyFileVersionHandler extends PropertyFileVersionHandler {
 
-    public static final String DEFAULT_DEFAULT_VERSION_STRING = "1.0";
+    public static final String DEFAULT_DEFAULT_VERSION_STRING = "1.0.0";
     
-    private String defaultVersionString = DEFAULT_DEFAULT_VERSION_STRING;
-    
-    
-    
-    public AutoCreatingPropertyFileHandler(File propertyFilePath) throws IOException {
-        super(propertyFilePath);
+    private String defaultVersionString;
+
+    public AutoCreatingPropertyFileVersionHandler(PropertyFileIoHandler fileHandler, File propertyFilePath, String propertyKey) throws IOException {
+        super(fileHandler, propertyFilePath, propertyKey);
     }
 
-    public AutoCreatingPropertyFileHandler(String propertyFilePath) throws IOException {
-        super(propertyFilePath);
+    public AutoCreatingPropertyFileVersionHandler(PropertyFileIoHandler propertyFileTool, File propertyPath) throws IOException {
+        super(propertyFileTool, propertyPath);
     }
 
-    public String getDefaultVersionString() {
-        return defaultVersionString;
+    public AutoCreatingPropertyFileVersionHandler(PropertyFileIoHandler fileHandler) throws IOException {
+        super(fileHandler);
     }
-    
-    public void setDefaultVersionString(String defaultVersionString) throws ParseException {
-        Version.valueOf(versionKey);
+
+    @Override
+    public PropertyFileVersionHandler setPropertyFilePath(File propertyFilePath) throws IOException {
+        if (propertyFilePath != null && !propertyFilePath.exists()) {
+            propertyFilePath.createNewFile();
+        }
         
-        this.defaultVersionString = defaultVersionString;
+        return super.setPropertyFilePath(propertyFilePath);
     }
     
     @Override
-    public void setPropertyFilePath(File propertyFilePath) throws IOException {
-        try {
-            super.setPropertyFilePath(propertyFilePath);
-        } catch (FileNotFoundException ex) {
-            
-            this.properties = new Properties();
-            this.propertyFilePath = propertyFilePath;
-            
-            this.saveVersion(Version.valueOf(this.defaultVersionString));
+    public Version loadVersion() throws IOException {
+        if (!this.getPropertyFilePath().exists()) {
+            throw new FileNotFoundException("");
         }
+        
+        return super.loadVersion(); //To change body of generated methods, choose Tools | Templates.
     }
     
+    
+        
 }

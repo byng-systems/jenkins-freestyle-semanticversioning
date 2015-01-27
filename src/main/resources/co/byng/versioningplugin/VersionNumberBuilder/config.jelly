@@ -1,25 +1,49 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+    <f:optionalBlock
+        name="doOverrideVersion"
+        title="Reset the current version on the next build"
+        inline="true"
+        checked="${instance.doOverrideVersion}"
+    >
+        <f:entry title="New version field to set" field="overrideVersion">
+            <f:textbox default="1.0.0"/>
+        </f:entry>
+    </f:optionalBlock>
     
     <f:entry title="Path to the project's properties file" field="propertyFilePath">
         <f:textbox default="version.properties"/>
     </f:entry>
     
-    <f:entry title="Environment variable for major version" field="majorEnvVariable">
-        <f:textbox/>
-    </f:entry>
+    <f:optionalBlock
+        name="baseMajorOnEnvVariable"
+        title="Set the major version component based on the value of an environment variable"
+        inline="true"
+        checked="${instance.baseMajorOnEnvVariable}"
+    >
+        <f:entry title="Environment variable" field="majorEnvVariable">
+            <f:textbox/>
+        </f:entry>
+    </f:optionalBlock>
     
-    <f:entry title="Environment variable for minor version" field="minorEnvVariable">
-        <f:textbox/>
+    <f:optionalBlock
+        name="baseMinorOnEnvVariable"
+        title="Set the minor version component based on the value of an environment variable"
+        inline="true"
+        checked="${instance.baseMinorOnEnvVariable}"
+    >
+        <f:entry title="Environment variable" field="minorEnvVariable">
+            <f:textbox/>
+        </f:entry>
+    </f:optionalBlock>
+    
+    <f:entry title="Set pre-release version" field="preReleaseVersion">
+        <f:select/>
     </f:entry>
     
     <f:entry title="Field to increment upon each build" field="fieldToIncrement">
-        <f:select name="fieldToIncrement">
-            <f:option selected="true" name="major" value="major">Major</f:option>
-            <f:option selected="true" name="minor" value="minor">Minor</f:option>
-            <f:option selected="true" name="build" value="build">Build</f:option>
-            <f:option selected="true" name="rc" value="rc">Release Candidate</f:option>
-        </f:select>
+        <f:select/>
     </f:entry>
 
 </j:jelly>

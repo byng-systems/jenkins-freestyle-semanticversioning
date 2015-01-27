@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2015 matt.
+ * Copyright 2015 M.D.Ward <matthew.ward@byng-systems.com>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,41 +21,42 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package co.byng.versioningplugin.handler;
+package co.byng.versioningplugin.handler.file;
 
-import com.github.zafarkhaja.semver.Version;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 
 /**
  *
- * @author matt
+ * @author M.D.Ward <matthew.ward@byng-systems.com>
  */
-public class PropertyHandler implements VersionRetrievalInterface {
-
-    public static final String DEFAULT_VERSION_KEY = "version";
+public class PropertyFileIoHandler {
     
-    protected Properties properties;
-    protected String versionKey = DEFAULT_VERSION_KEY;
-
-    public String getVersionKey() {
-        return versionKey;
-    }
-
-    public void setVersionKey(String versionKey) {
-        this.versionKey = versionKey;
-    }
-
-    public Properties getProperties() {
+    /**
+     * 
+     * @param f
+     * @return
+     * @throws IOException 
+     */
+    public Properties loadPropertiesFromFile(File f) throws IOException {
+        Properties properties = new Properties();
+        
+        properties.load(new FileInputStream(f));
+        
         return properties;
     }
-
-    public void setProperties(Properties properties) {
-        this.properties = properties;
-    }
     
-    public Version loadVersion() throws IOException {
-        return Version.valueOf((String) this.properties.getProperty(this.versionKey));
+    /**
+     * 
+     * @param properties
+     * @param f
+     * @throws IOException 
+     */
+    public void savePropertiesToFile(Properties properties, File f) throws IOException {
+        properties.store(new FileOutputStream(f), "");
     }
     
 }
