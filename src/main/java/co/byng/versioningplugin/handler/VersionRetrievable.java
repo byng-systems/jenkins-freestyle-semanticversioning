@@ -30,7 +30,7 @@ import java.io.IOException;
  *
  * @author matt
  */
-public interface VersionRetrievalInterface {
+public interface VersionRetrievable {
     
     public Version loadVersion() throws IOException;
     

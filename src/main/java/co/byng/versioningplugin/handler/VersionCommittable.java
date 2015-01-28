@@ -30,7 +30,7 @@ import java.io.IOException;
  *
  * @author matt
  */
-public interface VersionCommittingInterface {
+public interface VersionCommittable {
     
     public boolean saveVersion(Version version) throws IOException;
     
