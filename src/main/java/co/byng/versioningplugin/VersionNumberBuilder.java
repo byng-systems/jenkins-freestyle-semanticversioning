@@ -55,7 +55,7 @@ import org.kohsuke.stapler.StaplerRequest;
 public class VersionNumberBuilder extends Builder implements VersioningConfigurationProvider {
 
     protected VersioningConfigurationWriteableProvider configuration;
-    protected transient ServiceFactory serviceFactory;
+    protected ServiceFactory serviceFactory;
     protected transient VersionNumberUpdater updater;
     protected transient VersionRetrievable retriever;
     protected transient VersionCommittable committer;
@@ -159,7 +159,11 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
                 currentVersion.toString()
             );
             
-            this.varExporter.export(build);
+            if (this.getDoEnvExport()) {
+                this.varExporter.export(build);
+            } else {
+                this.varExporter.preventExport(build);
+            }
             
             return true;
 

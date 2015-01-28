@@ -45,4 +45,8 @@ public class VariableExporter {
         build.addAction(action);
     }
     
+    public void preventExport(AbstractBuild build) {
+        build.replaceAction(new AddEnvVarsAction());
+    }
+    
 }
