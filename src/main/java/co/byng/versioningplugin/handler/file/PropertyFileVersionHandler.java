@@ -23,12 +23,11 @@
  */
 package co.byng.versioningplugin.handler.file;
 
-import co.byng.versioningplugin.handler.VersionCommittingInterface;
-import co.byng.versioningplugin.handler.VersionRetrievalInterface;
+import co.byng.versioningplugin.handler.VersionCommittable;
+import co.byng.versioningplugin.handler.VersionRetrievable;
 import com.github.zafarkhaja.semver.Version;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 
@@ -36,7 +35,7 @@ import java.util.Properties;
  *
  * @author matt
  */
-public class PropertyFileVersionHandler implements VersionRetrievalInterface, VersionCommittingInterface {
+public class PropertyFileVersionHandler implements VersionRetrievable, VersionCommittable {
 
     /**
      * 
