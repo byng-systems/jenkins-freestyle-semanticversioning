@@ -38,6 +38,7 @@ package co.byng.versioningplugin.configuration;
     protected String minorEnvVariable;
     protected String preReleaseVersion;
     protected String fieldToIncrement;
+    protected boolean doEnvExport = true;
     
     @Override
     public boolean getDoOverrideVersion() {
@@ -82,6 +83,11 @@ package co.byng.versioningplugin.configuration;
     @Override
     public String getFieldToIncrement() {
         return fieldToIncrement;
+    }
+
+    @Override
+    public boolean getDoEnvExport() {
+        return doEnvExport;
     }
 
     @Override
@@ -143,6 +149,13 @@ package co.byng.versioningplugin.configuration;
     @Override
     public VersioningConfigurationWriteableProvider setFieldToIncrement(String fieldToIncrement) {
         this.fieldToIncrement = fieldToIncrement;
+        
+        return this;
+    }
+
+    @Override
+    public VersioningConfigurationWriteableProvider setDoEnvExport(boolean doEnvExport) {
+        this.doEnvExport = doEnvExport;
         
         return this;
     }

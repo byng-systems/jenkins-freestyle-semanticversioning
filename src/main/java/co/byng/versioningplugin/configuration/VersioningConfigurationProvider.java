@@ -47,4 +47,6 @@ public interface VersioningConfigurationProvider {
 
     public String getFieldToIncrement();
     
+    public boolean getDoEnvExport();
+    
 }

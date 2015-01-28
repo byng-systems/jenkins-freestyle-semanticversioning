@@ -47,4 +47,6 @@ public interface VersioningConfigurationWriteableProvider extends VersioningConf
 
     public VersioningConfigurationWriteableProvider setFieldToIncrement(String fieldToIncrement);
     
+    public VersioningConfigurationWriteableProvider setDoEnvExport(boolean doEnvExport);
+    
 }
