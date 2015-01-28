@@ -45,5 +45,9 @@
     <f:entry title="Field to increment upon each build" field="fieldToIncrement">
         <f:select/>
     </f:entry>
+    
+    <f:entry title="Export previous and current versions as environment variables" field="doEnvExport">
+        <f:checkbox default="true"/>
+    </f:entry>
 
 </j:jelly>
