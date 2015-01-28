@@ -26,32 +26,17 @@ package co.byng.versioningplugin;
 import co.byng.versioningplugin.configuration.OptionsProvider;
 import co.byng.versioningplugin.configuration.VersioningConfiguration;
 import co.byng.versioningplugin.configuration.VersioningConfigurationProvider;
-import co.byng.versioningplugin.configuration.VersioningGlobalConfiguration;
-import co.byng.versioningplugin.configuration.VersioningGlobalConfigurationProvider;
-import co.byng.versioningplugin.configuration.VersioningGlobalConfigurationWriteableProvider;
-import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.XmlFile;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.Action;
 import hudson.model.BuildListener;
-import hudson.model.EnvironmentContributingAction;
-import hudson.model.EnvironmentContributor;
-import hudson.model.Job;
-import hudson.model.ParametersAction;
-import hudson.model.Run;
-import hudson.model.TaskListener;
 import hudson.tasks.BuildWrapper;
 import hudson.tasks.BuildWrapperDescriptor;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
-import java.util.LinkedHashMap;
 import java.util.Map;
-import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
 
 /**
  *
@@ -80,7 +65,8 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
             boolean baseMinorOnEnvVariable,
             String minorEnvVariable,
             String preReleaseVersion,
-            String fieldToIncrement
+            String fieldToIncrement,
+            boolean doEnvExport
     ) throws IllegalArgumentException {
         this(
             new VersionNumberBuilder(
@@ -94,6 +80,7 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
                 .setMinorEnvVariable(minorEnvVariable)
                 .setPreReleaseVersion(preReleaseVersion)
                 .setFieldToIncrement(fieldToIncrement)
+                .setDoEnvExport(doEnvExport)
             )
         );
     }
@@ -213,7 +200,7 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
 
         @Override
         public String getId() {
-            return VersionNumberBuilder.class.getName();
+            return super.getId();
         }
         
         @Override

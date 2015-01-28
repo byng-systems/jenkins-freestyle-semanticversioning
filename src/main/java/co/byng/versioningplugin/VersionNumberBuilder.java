@@ -59,7 +59,6 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
     protected transient VersionNumberUpdater updater;
     protected transient VersionRetrievable retriever;
     protected transient VersionCommittable committer;
-    protected transient VariableExporter varExporter;
     
     
     
@@ -82,7 +81,8 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
         boolean baseMinorOnEnvVariable,
         String minorEnvVariable,
         String preReleaseVersion,
-        String fieldToIncrement
+        String fieldToIncrement,
+        boolean doEnvExport
     ) throws IllegalArgumentException {
         this(
             new VersioningConfiguration()
@@ -95,6 +95,7 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
                 .setMinorEnvVariable(minorEnvVariable)
                 .setPreReleaseVersion(preReleaseVersion)
                 .setFieldToIncrement(fieldToIncrement)
+                .setDoEnvExport(doEnvExport)
         );
     }
     
@@ -102,9 +103,9 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         try {
             this.lazyLoadServices(build.getProject());
+            VariableExporter varExporter = this.serviceFactory.createVarExporter(null);
             
             Version currentVersion;
-            
             if (this.getDoOverrideVersion()) {
                 currentVersion = Version.valueOf(this.getOverrideVersion());
                 this.committer.saveVersion(currentVersion);
@@ -119,12 +120,8 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
             }
 
             EnvVars environment = build.getEnvironment(listener);
+            Version previousVersion = currentVersion;
             
-            this.varExporter.addVariableToExport(
-                this.getDescriptor().getPreviousVersionEnvVariable(),
-                currentVersion.toString()
-            );
-
             currentVersion = this.updater.incrementSingleVersionComponent(
                 currentVersion,
                 this.getFieldToIncrement()
@@ -147,22 +144,25 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
             }
             
             String preReleaseVersion;
-            if ((preReleaseVersion = this.getPreReleaseVersion()) != null && !preReleaseVersion.isEmpty()) {
+            if ((preReleaseVersion = this.getPreReleaseVersion()) != null) {
                 currentVersion = this.updater.setPreReleaseVersion(currentVersion, preReleaseVersion);
             }
             
             listener.getLogger().append("Updating to " + currentVersion + "\n");
             this.committer.saveVersion(currentVersion);
             
-            this.varExporter.addVariableToExport(
-                this.getDescriptor().getCurrentVersionEnvVariable(),
-                currentVersion.toString()
-            );
-            
             if (this.getDoEnvExport()) {
-                this.varExporter.export(build);
-            } else {
-                this.varExporter.preventExport(build);
+                varExporter.addVariableToExport(
+                    this.getDescriptor().getPreviousVersionEnvVariable(),
+                    previousVersion.toString()
+                );
+                
+                varExporter.addVariableToExport(
+                    this.getDescriptor().getCurrentVersionEnvVariable(),
+                    currentVersion.toString()
+                );
+                
+                varExporter.export(build);
             }
             
             return true;
@@ -177,6 +177,10 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
     protected void lazyLoadServices(AbstractProject project) throws IOException {
         String propertyFilePath = this.getPropertyFilePath();
         
+        if (this.serviceFactory == null) {
+            this.serviceFactory = new LazyLoadingServiceFactory(new FileAbsolutePathProvider());
+        }
+        
         this.committer = this.serviceFactory.createCommitter(
             project,
             propertyFilePath,
@@ -190,8 +194,6 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
         );
           
         this.updater = this.serviceFactory.createUpdater(updater);
-        
-        this.varExporter = this.serviceFactory.createVarExporter(this.varExporter);
     }
 
     public VersioningConfigurationWriteableProvider getConfiguration() {
@@ -208,10 +210,6 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
 
     public VersionCommittable getCommitter() {
         return committer;
-    }
-
-    public VariableExporter getVarExporter() {
-        return varExporter;
     }
 
     public void setConfiguration(VersioningConfigurationWriteableProvider configuration) {
@@ -232,10 +230,6 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
 
     public void setRetriever(VersionRetrievable retriever) {
         this.retriever = retriever;
-    }
-
-    public void setVarExporter(VariableExporter varExporter) {
-        this.varExporter = varExporter;
     }
 
     @Override

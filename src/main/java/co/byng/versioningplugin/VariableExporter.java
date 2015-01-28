@@ -42,11 +42,7 @@ public class VariableExporter {
     }
     
     public void export(AbstractBuild build) {
-        build.addAction(action);
-    }
-    
-    public void preventExport(AbstractBuild build) {
-        build.replaceAction(new AddEnvVarsAction());
+        build.replaceAction(action);
     }
     
 }
