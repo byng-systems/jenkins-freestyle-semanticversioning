@@ -165,6 +165,11 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
     }
 
     @Override
+    public boolean getDoEnvExport() {
+        return this.builder.getDoEnvExport();
+    }
+
+    @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();
     }

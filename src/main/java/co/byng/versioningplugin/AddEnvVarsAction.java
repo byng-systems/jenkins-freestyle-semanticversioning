@@ -26,6 +26,7 @@ package co.byng.versioningplugin;
 import hudson.EnvVars;
 import hudson.model.AbstractBuild;
 import hudson.model.EnvironmentContributingAction;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -38,6 +39,10 @@ public class AddEnvVarsAction implements EnvironmentContributingAction {
 
     public AddEnvVarsAction(Map<String, String> envVars) {
         this.envVars = envVars;
+    }
+
+    public AddEnvVarsAction() {
+        this(new HashMap<String, String>());
     }
     
     @Override
