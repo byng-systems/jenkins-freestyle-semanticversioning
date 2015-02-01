@@ -29,7 +29,7 @@ package co.byng.versioningplugin.configuration;
  */
 public interface VersioningConfigurationWriteableProvider extends VersioningConfigurationProvider {
 
-    public VersioningConfiguration setDoOverrideVersion(boolean doOverrideVersion);
+    public VersioningConfigurationWriteableProvider setDoOverrideVersion(boolean doOverrideVersion);
 
     public VersioningConfigurationWriteableProvider setOverrideVersion(String overrideVersion);
 

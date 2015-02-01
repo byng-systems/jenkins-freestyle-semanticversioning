@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2015 matt.
+ * Copyright 2015 M.D.Ward <matthew.ward@byng-systems.com>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,37 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package co.byng.versioningplugin.service;
+package co.byng.versioningplugin.versioning;
 
-import co.byng.versioningplugin.VariableExporter;
-import co.byng.versioningplugin.handler.VersionCommittable;
-import co.byng.versioningplugin.handler.VersionRetrievable;
-import co.byng.versioningplugin.versioning.VersionNumberUpdater;
-import co.byng.versioningplugin.versioning.VersionFactory;
-import hudson.model.AbstractProject;
-import java.io.IOException;
+import com.github.zafarkhaja.semver.ParseException;
+import com.github.zafarkhaja.semver.Version;
 
 /**
  *
- * @author matt
+ * @author M.D.Ward <matthew.ward@byng-systems.com>
  */
-public interface ServiceFactory {
+public class StaticVersionFactory implements VersionFactory {
     
-    public VersionCommittable createCommitter(
-        AbstractProject project,
-        String propertyFilePath,
-        VersionCommittable currentCommitter
-    ) throws IOException;
+    @Override
+    public Version buildVersionFromString(String version) throws ParseException {
+        return Version.valueOf(version);
+    }
     
-    public VersionRetrievable createRetriever(
-        AbstractProject project,
-        String propertyFilePath,
-        VersionRetrievable currentRetriever
-    ) throws IOException;
-    
-    public VersionNumberUpdater createUpdater(VersionNumberUpdater currentUpdater);
-    
-    public VariableExporter createVarExporter(VariableExporter currentVarExporter);
-    
-    public VersionFactory createVersionFactory(VersionFactory versionFactory);
 }

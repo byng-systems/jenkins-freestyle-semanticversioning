@@ -23,7 +23,7 @@
  */
 package co.byng.versioningplugin.configuration;
 
-import co.byng.versioningplugin.updater.VersionNumberUpdater;
+import co.byng.versioningplugin.versioning.VersionNumberUpdater;
 import hudson.util.ListBoxModel;
 
 /**

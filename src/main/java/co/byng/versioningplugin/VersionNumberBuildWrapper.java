@@ -50,11 +50,6 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
         this.builder = builder;
     }
 
-    @Override
-    public void makeBuildVariables(AbstractBuild build, Map<String, String> variables) {
-        super.makeBuildVariables(build, variables); //To change body of generated methods, choose Tools | Templates.
-    }
-    
     @DataBoundConstructor
     public VersionNumberBuildWrapper(
             boolean doOverrideVersion,
@@ -169,11 +164,7 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
         public DescriptorImpl(
             OptionsProvider optionsProvider
         ) {
-            if (optionsProvider == null) {
-                throw new IllegalArgumentException("Global configuration cannot be given as a null object");
-            }
-
-            this.optionsProvider = optionsProvider;
+            this.setOptionsProvider(optionsProvider);
         }
 
         public DescriptorImpl() {
@@ -185,6 +176,10 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
         }
 
         public void setOptionsProvider(OptionsProvider optionsProvider) {
+            if (optionsProvider == null) {
+                throw new IllegalArgumentException("Options provider cannot be null");
+            }
+
             this.optionsProvider = optionsProvider;
         }
 
@@ -198,11 +193,6 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
             return "Update versioning before build";
         }
 
-        @Override
-        public String getId() {
-            return super.getId();
-        }
-        
         @Override
         public String getConfigPage() {
             return getViewPage(VersionNumberBuilder.class, "config.jelly");

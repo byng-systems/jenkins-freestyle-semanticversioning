@@ -29,9 +29,10 @@ import co.byng.versioningplugin.handler.VersionCommittable;
 import co.byng.versioningplugin.handler.VersionRetrievable;
 import co.byng.versioningplugin.handler.file.AutoCreatingPropertyFileVersionHandler;
 import co.byng.versioningplugin.handler.file.PropertyFileIoHandler;
-import co.byng.versioningplugin.updater.VersionNumberUpdater;
+import co.byng.versioningplugin.versioning.VersionNumberUpdater;
+import co.byng.versioningplugin.versioning.StaticVersionFactory;
+import co.byng.versioningplugin.versioning.VersionFactory;
 import hudson.model.AbstractProject;
-import java.io.File;
 import java.io.IOException;
 
 /**
@@ -92,6 +93,14 @@ public class LazyLoadingServiceFactory implements ServiceFactory {
         }
         
         return currentVarExporter;
+    }
+    
+    public VersionFactory createVersionFactory(VersionFactory versionFactory) {
+        if (versionFactory == null) {
+            return new StaticVersionFactory();
+        }
+        
+        return versionFactory;
     }
     
 }

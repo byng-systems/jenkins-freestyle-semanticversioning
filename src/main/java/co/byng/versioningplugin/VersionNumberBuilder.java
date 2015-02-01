@@ -8,12 +8,11 @@ import co.byng.versioningplugin.configuration.VersioningGlobalConfigurationProvi
 import co.byng.versioningplugin.configuration.VersioningGlobalConfigurationWriteableProvider;
 import co.byng.versioningplugin.handler.VersionCommittable;
 import co.byng.versioningplugin.handler.VersionRetrievable;
-import co.byng.versioningplugin.handler.file.AutoCreatingPropertyFileVersionHandler;
-import co.byng.versioningplugin.handler.file.PropertyFileIoHandler;
 import co.byng.versioningplugin.service.FileAbsolutePathProvider;
 import co.byng.versioningplugin.service.LazyLoadingServiceFactory;
 import co.byng.versioningplugin.service.ServiceFactory;
-import co.byng.versioningplugin.updater.VersionNumberUpdater;
+import co.byng.versioningplugin.versioning.VersionNumberUpdater;
+import co.byng.versioningplugin.versioning.VersionFactory;
 import com.github.zafarkhaja.semver.ParseException;
 import com.github.zafarkhaja.semver.Version;
 import hudson.EnvVars;
@@ -26,10 +25,7 @@ import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import java.io.File;
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -59,6 +55,7 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
     protected transient VersionNumberUpdater updater;
     protected transient VersionRetrievable retriever;
     protected transient VersionCommittable committer;
+    protected transient VersionFactory versionFactory;
     
     
     
@@ -107,7 +104,7 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
             
             Version currentVersion;
             if (this.getDoOverrideVersion()) {
-                currentVersion = Version.valueOf(this.getOverrideVersion());
+                currentVersion = this.versionFactory.buildVersionFromString(this.getOverrideVersion());
                 this.committer.saveVersion(currentVersion);
 
                 this.configuration
@@ -121,12 +118,12 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
 
             EnvVars environment = build.getEnvironment(listener);
             Version previousVersion = currentVersion;
-            
+
             currentVersion = this.updater.incrementSingleVersionComponent(
                 currentVersion,
                 this.getFieldToIncrement()
             );
-            
+
             if (this.getBaseMajorOnEnvVariable()) {
                 currentVersion = this.updater.updateMajorBasedOnEnvironmentVariable(
                     currentVersion,
@@ -175,11 +172,11 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
     }
     
     protected void lazyLoadServices(AbstractProject project) throws IOException {
-        String propertyFilePath = this.getPropertyFilePath();
-        
         if (this.serviceFactory == null) {
             this.serviceFactory = new LazyLoadingServiceFactory(new FileAbsolutePathProvider());
         }
+        
+        String propertyFilePath = this.getPropertyFilePath();
         
         this.committer = this.serviceFactory.createCommitter(
             project,
@@ -192,24 +189,34 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
             propertyFilePath,
             this.retriever
         );
-          
-        this.updater = this.serviceFactory.createUpdater(updater);
+        
+        this.updater = this.serviceFactory.createUpdater(this.updater);
+        
+        this.versionFactory = this.serviceFactory.createVersionFactory(this.versionFactory);
     }
 
     public VersioningConfigurationWriteableProvider getConfiguration() {
-        return configuration;
+        return this.configuration;
     }
 
     public ServiceFactory getServiceFactory() {
-        return serviceFactory;
+        return this.serviceFactory;
     }
     
     public VersionNumberUpdater getUpdater() {
-        return updater;
+        return this.updater;
     }
 
     public VersionCommittable getCommitter() {
-        return committer;
+        return this.committer;
+    }
+    
+    public VersionRetrievable getRetriever() {
+        return this.retriever;
+    }
+    
+    public VersionFactory getVersionFactory() {
+        return this.versionFactory;
     }
 
     public void setConfiguration(VersioningConfigurationWriteableProvider configuration) {
@@ -232,6 +239,10 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
         this.retriever = retriever;
     }
 
+    public void setVersionFactory(VersionFactory versionFactory) {
+        this.versionFactory = versionFactory;
+    }
+    
     @Override
     public boolean getDoOverrideVersion() {
         return this.configuration.getDoOverrideVersion();
@@ -296,7 +307,7 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
      * for the actual HTML fragment for the configuration screen.
      */
     @Extension
-    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> implements VersioningGlobalConfigurationProvider {
+    public static class DescriptorImpl extends BuildStepDescriptor<Builder> implements VersioningGlobalConfigurationProvider {
 
         private VersioningGlobalConfigurationWriteableProvider globalConfiguration;
         private OptionsProvider optionsProvider;
@@ -305,16 +316,8 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
             VersioningGlobalConfigurationWriteableProvider globalConfiguration,
             OptionsProvider optionsProvider
         ) {
-            if (globalConfiguration == null) {
-                throw new IllegalArgumentException("Global configuration cannot be given as a null object");
-            }
-            
-            if (optionsProvider == null) {
-                throw new IllegalArgumentException("Global configuration cannot be given as a null object");
-            }
-            
-            this.globalConfiguration = globalConfiguration;
-            this.optionsProvider = optionsProvider;
+            this.setGlobalConfiguration(globalConfiguration);
+            this.setOptionsProvider(optionsProvider);
             
             load();
         }
@@ -358,8 +361,24 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
             return globalConfiguration;
         }
         
-        public void setGlobalConfiguration(VersioningGlobalConfigurationWriteableProvider globalConfiguration) {
+        public void setGlobalConfiguration(VersioningGlobalConfigurationWriteableProvider globalConfiguration) throws IllegalArgumentException {
+            if (globalConfiguration == null) {
+                throw new IllegalArgumentException("Global configuration cannot be given as a null object");
+            }
+            
             this.globalConfiguration = globalConfiguration;
+        }
+
+        public OptionsProvider getOptionsProvider() {
+            return optionsProvider;
+        }
+
+        public void setOptionsProvider(OptionsProvider optionsProvider) throws IllegalArgumentException {
+            if (optionsProvider == null) {
+                throw new IllegalArgumentException("Global configuration cannot be given as a null object");
+            }
+            
+            this.optionsProvider = optionsProvider;
         }
     
         @Override
