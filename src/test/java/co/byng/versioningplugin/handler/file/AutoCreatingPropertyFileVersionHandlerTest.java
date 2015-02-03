@@ -100,21 +100,29 @@ public class AutoCreatingPropertyFileVersionHandlerTest {
         when(version.toString()).thenReturn(versionString);
         
         Properties properties = mock(Properties.class);
-        when(properties.setProperty(same(propertyKey), same(versionString))).thenReturn(null);
+        when(properties.containsKey(same(propertyKey))).thenReturn(true);
+        when(properties.get(same(propertyKey))).thenReturn(versionString);
+        
+        doNothing().when(this.ioHandler).savePropertiesToFile(isA(Properties.class), same(propertyFile));
         when(this.ioHandler.loadPropertiesFromFile(same(propertyFile))).thenReturn(properties);
         
-        this.propHandler
-                .setPropertyFilePath(propertyFile)
-                .setPropertyKey(propertyKey)
-                .loadVersion()
-        ;
+        assertSame(
+            version,
+            this.propHandler
+                    .setPropertyFilePath(propertyFile)
+                    .setPropertyKey(propertyKey)
+                    .loadVersion()
+        );
         
         verify(propertyFile, times(2)).exists();
         
         verify(this.versionFactory, times(1)).buildVersionFromString(same(AutoCreatingPropertyFileVersionHandler.DEFAULT_VERSION_STRING));
-        verify(version, times(1)).toString();
+        verify(this.versionFactory, times(1)).buildVersionFromString(same(versionString));
         
-        verify(properties, times(1)).setProperty(same(propertyKey), same(versionString));
+        verify(properties, times(1)).containsKey(same(propertyKey));
+        verify(properties, times(1)).get(same(propertyKey));
+        
+        verify(this.ioHandler, times(1)).savePropertiesToFile(isA(Properties.class), same(propertyFile));
         verify(this.ioHandler, times(1)).loadPropertiesFromFile(same(propertyFile));
     }
     
