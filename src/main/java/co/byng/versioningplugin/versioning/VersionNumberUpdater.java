@@ -34,14 +34,16 @@ public class VersionNumberUpdater {
     
     public Version incrementSingleVersionComponent(Version currentVersion, String component) {
         
-        if (component.equals(VersionComponent.MAJOR)) {
-            return currentVersion.incrementMajorVersion();
-            
-        } else if (component.equals(VersionComponent.MINOR)) {
-            return currentVersion.incrementMinorVersion();
-            
-        } else if (component.equals(VersionComponent.PATCH)) {
-            return currentVersion.incrementPatchVersion();
+        if (component != null) {
+            if (component.equals(VersionComponent.MAJOR)) {
+                return currentVersion.incrementMajorVersion();
+
+            } else if (component.equals(VersionComponent.MINOR)) {
+                return currentVersion.incrementMinorVersion();
+
+            } else if (component.equals(VersionComponent.PATCH)) {
+                return currentVersion.incrementPatchVersion();
+            }
         }
         
         return currentVersion;
@@ -88,7 +90,7 @@ public class VersionNumberUpdater {
         String envVariableName,
         int currentComponentVersion
     ) throws Exception, NumberFormatException {
-        if (envVariableName != null && !environment.containsKey(envVariableName)) {
+        if (envVariableName == null || !environment.containsKey(envVariableName)) {
             throw new Exception(
                 "Environment variable '" + envVariableName + "' is not set in the current context"
             );

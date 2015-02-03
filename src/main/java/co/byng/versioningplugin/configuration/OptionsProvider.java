@@ -43,7 +43,7 @@ public class OptionsProvider {
 
     public ListBoxModel getFieldToIncrementItems() {
         ListBoxModel model = new ListBoxModel();
-        
+
         model.add("None (skip)", VersionNumberUpdater.VersionComponent.NONE);
         model.addAll(this.getEnvVariableSubjectFieldItems());
         model.add("Patch", VersionNumberUpdater.VersionComponent.PATCH);
@@ -55,33 +55,33 @@ public class OptionsProvider {
         ListBoxModel model = new ListBoxModel();
 
         model.add(
-                "None (clear)",
-                VersionNumberUpdater.PreReleaseVersion.NONE
+            "None (clear)",
+            VersionNumberUpdater.PreReleaseVersion.NONE
         );
 
         model.add(
-                "Alpha",
-                VersionNumberUpdater.PreReleaseVersion.ALPHA
+            "Alpha",
+            VersionNumberUpdater.PreReleaseVersion.ALPHA
         );
 
         model.add(
-                "Beta",
-                VersionNumberUpdater.PreReleaseVersion.BETA
+            "Beta",
+            VersionNumberUpdater.PreReleaseVersion.BETA
         );
 
         model.add(
-                "Release candidate (rc)",
-                VersionNumberUpdater.PreReleaseVersion.RELEASE_CANDIDATE
+            "Release candidate (rc)",
+            VersionNumberUpdater.PreReleaseVersion.RELEASE_CANDIDATE
         );
 
         model.add(
-                "Nightly (nightly)",
-                VersionNumberUpdater.PreReleaseVersion.NIGHTLY
+            "Nightly (nightly)",
+            VersionNumberUpdater.PreReleaseVersion.NIGHTLY
         );
 
         model.add(
-                "Build (build)",
-                VersionNumberUpdater.PreReleaseVersion.BUILD
+            "Build (build)",
+            VersionNumberUpdater.PreReleaseVersion.BUILD
         );
 
         return model;

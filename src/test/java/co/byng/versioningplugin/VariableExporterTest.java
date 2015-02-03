@@ -60,12 +60,12 @@ public class VariableExporterTest {
 
             assertSame(this.addEnvVarsAction, actionProperty.get(this.varExporter));
             
-        } catch (Throwable t) {
+        } catch (ReflectiveOperationException ex) {
             fail(
                 "Exception occurred attempt to access protected field 'envVars' value: "
-                    + t.getClass().getSimpleName()
+                    + ex.getClass().getSimpleName()
                     + " - "
-                    + t.getMessage()
+                    + ex.getMessage()
             );
         }
     }

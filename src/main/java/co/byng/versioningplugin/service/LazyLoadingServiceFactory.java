@@ -55,10 +55,7 @@ public class LazyLoadingServiceFactory implements ServiceFactory {
         VersionCommittable currentCommitter
     ) throws IOException {
         if (currentCommitter == null) {
-            return new AutoCreatingPropertyFileVersionHandler(
-                new PropertyFileIoHandler(),
-                this.pathProvider.getPropertyFilePath(project, propertyFilePath)
-            );
+            return this.createDefaultFileHandler(project, propertyFilePath);
         }
         
         return currentCommitter;
@@ -70,15 +67,23 @@ public class LazyLoadingServiceFactory implements ServiceFactory {
         VersionRetrievable currentRetriever
     ) throws IOException {
         if (currentRetriever == null) {
-            return new AutoCreatingPropertyFileVersionHandler(
-                new PropertyFileIoHandler(),
-                this.pathProvider.getPropertyFilePath(project, propertyFilePath)
-            );
+            return this.createDefaultFileHandler(project, propertyFilePath);
         }
         
         return currentRetriever;
     }
-    
+
+    protected AutoCreatingPropertyFileVersionHandler createDefaultFileHandler(
+        AbstractProject project,
+        String propertyFilePath
+    ) {
+        return new AutoCreatingPropertyFileVersionHandler(
+            new PropertyFileIoHandler(),
+            new StaticVersionFactory(),
+            this.pathProvider.getPropertyFilePath(project, propertyFilePath)
+        );
+    }
+
     public VersionNumberUpdater createUpdater(VersionNumberUpdater currentUpdater) {
         if (currentUpdater == null) {
             return new VersionNumberUpdater();
@@ -86,7 +91,7 @@ public class LazyLoadingServiceFactory implements ServiceFactory {
         
         return currentUpdater;
     }
-    
+
     public VariableExporter createVarExporter(VariableExporter currentVarExporter) {
         if (currentVarExporter == null) {
             return new VariableExporter(new AddEnvVarsAction());
@@ -94,7 +99,7 @@ public class LazyLoadingServiceFactory implements ServiceFactory {
         
         return currentVarExporter;
     }
-    
+
     public VersionFactory createVersionFactory(VersionFactory versionFactory) {
         if (versionFactory == null) {
             return new StaticVersionFactory();
@@ -102,5 +107,5 @@ public class LazyLoadingServiceFactory implements ServiceFactory {
         
         return versionFactory;
     }
-    
+
 }

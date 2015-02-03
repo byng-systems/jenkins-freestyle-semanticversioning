@@ -24,19 +24,36 @@
 package co.byng.versioningplugin.versioning;
 
 import com.github.zafarkhaja.semver.ParseException;
-import com.github.zafarkhaja.semver.Version;
+import org.junit.Before;
+import org.junit.Test;
+import static org.junit.Assert.*;
 
 /**
  *
  * @author M.D.Ward <matthew.ward@byng-systems.com>
  */
-public class StaticVersionFactory implements VersionFactory {
+public class StaticVersionFactoryTest {
     
+    private StaticVersionFactory versionFactory;
     
+    @Before
+    public void setUp() {
+        this.versionFactory = new StaticVersionFactory();
+    }
     
-    @Override
-    public Version buildVersionFromString(String version) throws ParseException {
-        return Version.valueOf(version);
+    /**
+     * Test of buildVersionFromString method, of class StaticVersionFactory.
+     */
+    @Test(expected = ParseException.class)
+    public void testBuildVersionFromString() {
+        String versionString = "1.0.0";
+        
+        assertEquals(
+            versionString,
+            this.versionFactory.buildVersionFromString(versionString).toString()
+        );
+        
+        this.versionFactory.buildVersionFromString("RASIDOAJSIFU0UM308RY80NYM80");
     }
     
 }

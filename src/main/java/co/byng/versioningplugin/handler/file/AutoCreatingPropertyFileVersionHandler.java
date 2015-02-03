@@ -23,13 +23,10 @@
  */
 package co.byng.versioningplugin.handler.file;
 
-import co.byng.versioningplugin.handler.file.PropertyFileVersionHandler;
-import com.github.zafarkhaja.semver.ParseException;
+import co.byng.versioningplugin.versioning.VersionFactory;
 import com.github.zafarkhaja.semver.Version;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Properties;
 
 /**
  *
@@ -38,37 +35,38 @@ import java.util.Properties;
 public class AutoCreatingPropertyFileVersionHandler extends PropertyFileVersionHandler {
 
     public static final String DEFAULT_VERSION_STRING = "1.0.0";
-    
-    private String defaultVersionString;
 
-    public AutoCreatingPropertyFileVersionHandler(PropertyFileIoHandler fileHandler, File propertyFilePath, String propertyKey) throws IOException {
-        super(fileHandler, propertyFilePath, propertyKey);
+    public AutoCreatingPropertyFileVersionHandler(
+        PropertyFileIoHandler fileHandler,
+        VersionFactory versionFactory,
+        File propertyFilePath,
+        String propertyKey
+    ) {
+        super(fileHandler, versionFactory, propertyFilePath, propertyKey);
     }
 
-    public AutoCreatingPropertyFileVersionHandler(PropertyFileIoHandler propertyFileTool, File propertyPath) throws IOException {
-        super(propertyFileTool, propertyPath);
+    public AutoCreatingPropertyFileVersionHandler(
+        PropertyFileIoHandler propertyFileTool,
+        VersionFactory versionFactory,
+        File propertyPath
+    ) {
+        super(propertyFileTool, versionFactory, propertyPath);
     }
 
-    public AutoCreatingPropertyFileVersionHandler(PropertyFileIoHandler fileHandler) throws IOException {
-        super(fileHandler);
-    }
-
-    @Override
-    public PropertyFileVersionHandler setPropertyFilePath(File propertyFilePath) throws IOException {
-        if (propertyFilePath != null && !propertyFilePath.exists()) {
-            propertyFilePath.createNewFile();
-        }
-        
-        return super.setPropertyFilePath(propertyFilePath);
+    public AutoCreatingPropertyFileVersionHandler(
+        PropertyFileIoHandler fileHandler,
+        VersionFactory versionFactory
+    ) {
+        super(fileHandler, versionFactory);
     }
     
     @Override
     public Version loadVersion() throws IOException {
-        if (!this.propertyFilePath.exists()) {
-            this.saveVersion(Version.valueOf(DEFAULT_VERSION_STRING));
+        if (this.propertyFilePath != null && !this.propertyFilePath.exists()) {
+            this.saveVersion(this.versionFactory.buildVersionFromString(DEFAULT_VERSION_STRING));
         }
-        
-        return super.loadVersion(); //To change body of generated methods, choose Tools | Templates.
+
+        return super.loadVersion();
     }
-        
+
 }

@@ -27,6 +27,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Properties;
 
 /**
@@ -37,16 +40,104 @@ public class PropertyFileIoHandler {
     
     /**
      * 
+     */
+    protected Class<? extends InputStream> inputStreamClass = FileInputStream.class;
+    
+    /**
+     * 
+     */
+    protected Class<? extends OutputStream> outputStreamClass = FileOutputStream.class;
+
+
+
+    /**
+     * 
+     * @param inputStreamClass 
+     */
+    public void setInputStreamClass(Class<? extends InputStream> inputStreamClass) {
+        if (inputStreamClass == null) {
+            throw new IllegalArgumentException("Input stream class cannot be null");
+        }
+        
+        this.inputStreamClass = inputStreamClass;
+    }
+
+    /**
+     * 
+     * @param outputStreamClass 
+     */
+    public void setOutputStreamClass(Class<? extends OutputStream> outputStreamClass) {
+        if (outputStreamClass == null) {
+            throw new IllegalArgumentException("Input stream class cannot be null");
+        }
+        
+        this.outputStreamClass = outputStreamClass;
+    }
+    
+    /**
+     * 
+     * @param f
+     * @return
+     * @throws IOException 
+     */
+    protected InputStream buildInputStream(File f) throws IOException, Exception {
+        try {
+            return (InputStream) this.inputStreamClass.getConstructor(File.class).newInstance(f);
+        } catch (NoSuchMethodException ex) {
+            throw new IOException(
+                "Unable to instanstiate stream; "
+                        + this.inputStreamClass.getSimpleName()
+                        + " does not have a constructor accepting a single File argument",
+                ex
+            );
+        }
+    }
+    
+    /**
+     * 
+     * @param f
+     * @return
+     * @throws IOException 
+     */
+    protected OutputStream buildOutputStream(File f) throws IOException, Exception {
+        try {
+            return (OutputStream) this.outputStreamClass.getConstructor(File.class).newInstance(f);
+        } catch (NoSuchMethodException ex) {
+            throw new IOException(
+                "Unable to instanstiate stream; "
+                        + this.outputStreamClass.getSimpleName()
+                        + " does not have a constructor accepting a single File argument",
+                ex
+            );
+        }
+    }
+    
+    /**
+     * 
+     * @return 
+     */
+    protected Properties buildProperties() {
+        return new Properties();
+    }
+
+    /**
+     * 
      * @param f
      * @return
      * @throws IOException 
      */
     public Properties loadPropertiesFromFile(File f) throws IOException {
-        Properties properties = new Properties();
+        Properties properties = this.buildProperties();
         
-        properties.load(new FileInputStream(f));
-        
-        return properties;
+        try {
+            properties.load(this.buildInputStream(f));
+            
+            return properties;
+        } catch (IOException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new IOException("Unable to instantiate stream", ex);
+        }
     }
     
     /**
@@ -56,7 +147,13 @@ public class PropertyFileIoHandler {
      * @throws IOException 
      */
     public void savePropertiesToFile(Properties properties, File f) throws IOException {
-        properties.store(new FileOutputStream(f), "");
+        try {
+            properties.store(this.buildOutputStream(f), "");
+        } catch (IOException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new IOException("Unable to instantiate stream", ex);
+        }
     }
     
 }
