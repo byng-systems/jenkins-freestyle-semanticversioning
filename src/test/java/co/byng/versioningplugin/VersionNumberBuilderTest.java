@@ -30,6 +30,7 @@ import co.byng.versioningplugin.configuration.VersioningGlobalConfigurationWrite
 import co.byng.versioningplugin.handler.VersionCommittable;
 import co.byng.versioningplugin.handler.VersionRetrievable;
 import co.byng.versioningplugin.service.ServiceFactory;
+import co.byng.versioningplugin.service.TokenExpansionProvider;
 import co.byng.versioningplugin.versioning.VersionNumberUpdater;
 import co.byng.versioningplugin.versioning.VersionFactory;
 import com.github.zafarkhaja.semver.Version;
@@ -39,6 +40,8 @@ import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Descriptor.FormException;
+import hudson.util.FormValidation;
+import hudson.util.FormValidation.Kind;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -73,6 +76,7 @@ public class VersionNumberBuilderTest {
         private VersionCommittable committer;
         private VersionNumberBuilder builder;
         private VersionFactory versionFactory;
+        private TokenExpansionProvider tokenExpansionProvider;
 
         @Before
         public void setUp() {
@@ -82,6 +86,7 @@ public class VersionNumberBuilderTest {
             this.retriever = mock(VersionRetrievable.class);
             this.committer = mock(VersionCommittable.class);
             this.versionFactory = mock(VersionFactory.class);
+            this.tokenExpansionProvider = mock(TokenExpansionProvider.class);
 
             this.builder = new VersionNumberBuilder(this.configuration);
         }
@@ -111,6 +116,9 @@ public class VersionNumberBuilderTest {
             final String preReleaseVersion = "PRE_RELEASE";
             final String fieldToIncrement = "INCREMENT";
             final boolean doEnvExport = false;
+            final boolean doSetNameOrDescription = false;
+            final String newBuildName = "NEW BUILD NAME";
+            final String newBuildDescription = "NEW BUILD DESCRIPTION";
 
             final VersionNumberBuilder builder = new VersionNumberBuilder(
                 doOverrideVersion,
@@ -122,7 +130,10 @@ public class VersionNumberBuilderTest {
                 minorEnvVariable,
                 preReleaseVersion,
                 fieldToIncrement,
-                doEnvExport
+                doEnvExport,
+                doSetNameOrDescription,
+                newBuildName,
+                newBuildDescription
             );
 
             final VersioningConfigurationWriteableProvider configuration = builder.getConfiguration();
@@ -138,6 +149,9 @@ public class VersionNumberBuilderTest {
             assertSame(preReleaseVersion, configuration.getPreReleaseVersion());
             assertSame(fieldToIncrement, configuration.getFieldToIncrement());
             assertSame(doEnvExport, configuration.getDoEnvExport());
+            assertSame(doSetNameOrDescription, configuration.getDoSetNameOrDescription());
+            assertSame(newBuildName, configuration.getNewBuildName());
+            assertSame(newBuildDescription, configuration.getNewBuildDescription());
         }
 
         /**
@@ -173,6 +187,7 @@ public class VersionNumberBuilderTest {
                 when(this.serviceFactory.createRetriever(same(project), same(path), same(this.retriever))).thenReturn(this.retriever);
                 when(this.serviceFactory.createUpdater(same(this.updater))).thenReturn(this.updater);
                 when(this.serviceFactory.createVersionFactory(same(this.versionFactory))).thenReturn(this.versionFactory);
+                when(this.serviceFactory.createTokenExpansionProvider(same(this.tokenExpansionProvider))).thenReturn(this.tokenExpansionProvider);
 
                 this.builder.lazyLoadServices(project);
 
@@ -180,13 +195,15 @@ public class VersionNumberBuilderTest {
                 assertSame(this.committer, this.builder.getCommitter());
                 assertSame(this.retriever, this.builder.getRetriever());
                 assertSame(this.updater, this.builder.getUpdater());
-                
+                assertSame(this.tokenExpansionProvider, this.builder.getTokenExpander());
+
                 verify(this.configuration, times(1)).getPropertyFilePath();
 
                 verify(this.serviceFactory, times(1)).createCommitter(same(project), same(path), same(this.committer));
                 verify(this.serviceFactory, times(1)).createRetriever(same(project), same(path), same(this.retriever));
                 verify(this.serviceFactory, times(1)).createUpdater(same(this.updater));
                 verify(this.serviceFactory, times(1)).createVersionFactory(same(this.versionFactory));
+                verify(this.serviceFactory, times(1)).createTokenExpansionProvider(this.tokenExpansionProvider);
 
             } catch (IOException ex) {
                 fail("Failed due to IOException: " + ex.getMessage());
@@ -211,6 +228,9 @@ public class VersionNumberBuilderTest {
             
             this.builder.setVersionFactory(null);
             assertNull(this.builder.getVersionFactory());
+            
+            this.builder.setTokenExpander(null);
+            assertNull(this.builder.getTokenExpander());
         }
 
         /**
@@ -339,6 +359,42 @@ public class VersionNumberBuilderTest {
             verify(this.configuration, times(1)).getDoEnvExport();
         }
         
+        
+        @Test
+        public void testGetDoSetNameOrDescription() {
+            boolean result = false;
+            
+            when(this.configuration.getDoSetNameOrDescription()).thenReturn(result);
+            
+            assertSame(result, this.builder.getDoSetNameOrDescription());
+            
+            verify(this.configuration, times(1)).getDoSetNameOrDescription();
+        }
+        
+        @Test
+        public void testGetNewBuildName()
+        {
+            String result = "buildName";
+            
+            when(this.configuration.getNewBuildName()).thenReturn(result);
+            
+            assertSame(result, this.builder.getNewBuildName());
+            
+            verify(this.configuration, times(1)).getNewBuildName();
+        }
+        
+        @Test
+        public void testGetNewBuildDescription()
+        {
+            String result = "buildDescription";
+            
+            when(this.configuration.getNewBuildDescription()).thenReturn(result);
+            
+            assertSame(result, this.builder.getNewBuildDescription());
+            
+            verify(this.configuration, times(1)).getNewBuildDescription();
+        }
+    
         @Test
         public void testGetDescriptor() {
             Jenkins jenkins = mock(Jenkins.class);
@@ -383,6 +439,7 @@ public class VersionNumberBuilderTest {
         private VersionCommittable committer;
         private VersionNumberBuilder builder;
         private VersionFactory versionFactory;
+        private TokenExpansionProvider tokenExpander;
 
         private final String path = "/path/to/my/file";
         private AbstractProject project;
@@ -419,6 +476,7 @@ public class VersionNumberBuilderTest {
             this.retriever = mock(VersionRetrievable.class);
             this.committer = mock(VersionCommittable.class);
             this.versionFactory = mock(VersionFactory.class);
+            this.tokenExpander = mock(TokenExpansionProvider.class);
 
             this.builder = new VersionNumberBuilder(this.configuration);
             this.builder.setServiceFactory(this.serviceFactory);
@@ -426,6 +484,7 @@ public class VersionNumberBuilderTest {
             this.builder.setRetriever(this.retriever);
             this.builder.setVersionFactory(this.versionFactory);
             this.builder.setUpdater(this.updater);
+            this.builder.setTokenExpander(this.tokenExpander);
             
             this.exporter = mock(VariableExporter.class);
             this.project = mock(AbstractProject.class);
@@ -445,6 +504,7 @@ public class VersionNumberBuilderTest {
                 when(this.serviceFactory.createRetriever(same(this.project), same(this.path), same(this.retriever))).thenReturn(this.retriever);
                 when(this.serviceFactory.createUpdater(same(this.updater))).thenReturn(this.updater);
                 when(this.serviceFactory.createVersionFactory(same(this.versionFactory))).thenReturn(this.versionFactory);
+                when(this.serviceFactory.createTokenExpansionProvider(same(this.tokenExpander))).thenReturn(this.tokenExpander);
                 
                 when(this.serviceFactory.createVarExporter((VariableExporter) isNull())).thenReturn(this.exporter);
                 
@@ -523,7 +583,6 @@ public class VersionNumberBuilderTest {
                 verify(this.committer, times(1)).saveVersion(same(version2));
                 
                 verify(this.configuration, times(1)).getDoEnvExport();
-            } catch (AssertionError ex) {
             } catch (Throwable t) {
                 fail(
                     "Uncaught exception (should not have been thrown): "
@@ -543,9 +602,6 @@ public class VersionNumberBuilderTest {
                 final Version version1 = mock(Version.class);
                 when(this.configuration.getDoOverrideVersion()).thenReturn(false);
                 when(this.retriever.loadVersion()).thenReturn(version1);
-                
-                when(this.configuration.setDoOverrideVersion(eq(false))).thenReturn(this.configuration);
-                when(this.configuration.setOverrideVersion((String) isNull())).thenReturn(this.configuration);
                 
                 when(this.build.getEnvironment(same(this.listener))).thenReturn(this.environment);
                 
@@ -571,10 +627,6 @@ public class VersionNumberBuilderTest {
                 
                 verify(this.configuration, times(1)).getDoOverrideVersion();
                 verify(this.retriever, times(1)).loadVersion();
-                verify(this.committer, times(1)).saveVersion(same(version1));
-                
-                verify(this.configuration, times(1)).setDoOverrideVersion(eq(false));
-                verify(this.configuration, times(1)).setOverrideVersion((String) isNull());
                 
                 verify(this.configuration, times(1)).getFieldToIncrement();
                 verify(this.updater, times(1)).incrementSingleVersionComponent(same(version1), same(fieldToIncrement));
@@ -589,7 +641,6 @@ public class VersionNumberBuilderTest {
                 verify(this.committer, times(1)).saveVersion(same(version3));
                 
                 verify(this.configuration, times(1)).getDoEnvExport();
-            } catch (AssertionError ex) {
             } catch (Throwable t) {
                 fail(
                     "Uncaught exception (should not have been thrown): "
@@ -610,9 +661,6 @@ public class VersionNumberBuilderTest {
                 when(this.configuration.getDoOverrideVersion()).thenReturn(false);
                 when(this.retriever.loadVersion()).thenReturn(version1);
                 
-                when(this.configuration.setDoOverrideVersion(eq(false))).thenReturn(this.configuration);
-                when(this.configuration.setOverrideVersion((String) isNull())).thenReturn(this.configuration);
-                
                 when(this.build.getEnvironment(same(this.listener))).thenReturn(this.environment);
                 
                 final String fieldToIncrement = "FIELD TO INCREMENT";
@@ -625,12 +673,12 @@ public class VersionNumberBuilderTest {
                 final String minorEnvVariable = "MINOR ENV VARIABLE";
                 final Version version3 = mock(Version.class);
                 when(this.configuration.getBaseMinorOnEnvVariable()).thenReturn(true);
-                when(this.configuration.getMajorEnvVariable()).thenReturn(minorEnvVariable);
+                when(this.configuration.getMinorEnvVariable()).thenReturn(minorEnvVariable);
                 when(this.updater.updateMinorBasedOnEnvironmentVariable(same(version2), same(this.environment), same(minorEnvVariable))).thenReturn(version3);
                 
                 when(this.configuration.getPreReleaseVersion()).thenReturn(null);
                 
-                when(this.committer.saveVersion(same(version2))).thenReturn(true);
+                when(this.committer.saveVersion(same(version3))).thenReturn(true);
                 
                 when(this.configuration.getDoEnvExport()).thenReturn(false);
                 
@@ -638,10 +686,6 @@ public class VersionNumberBuilderTest {
                 
                 verify(this.configuration, times(1)).getDoOverrideVersion();
                 verify(this.retriever, times(1)).loadVersion();
-                verify(this.committer, times(1)).saveVersion(same(version1));
-                
-                verify(this.configuration, times(1)).setDoOverrideVersion(eq(false));
-                verify(this.configuration, times(1)).setOverrideVersion((String) isNull());
                 
                 verify(this.configuration, times(1)).getFieldToIncrement();
                 verify(this.updater, times(1)).incrementSingleVersionComponent(same(version1), same(fieldToIncrement));
@@ -657,7 +701,6 @@ public class VersionNumberBuilderTest {
                 verify(this.committer, times(1)).saveVersion(same(version3));
                 
                 verify(this.configuration, times(1)).getDoEnvExport();
-            } catch (AssertionError ex) {
             } catch (Throwable t) {
                 fail(
                     "Uncaught exception (should not have been thrown): "
@@ -677,9 +720,6 @@ public class VersionNumberBuilderTest {
                 final Version version1 = mock(Version.class);
                 when(this.configuration.getDoOverrideVersion()).thenReturn(false);
                 when(this.retriever.loadVersion()).thenReturn(version1);
-                
-                when(this.configuration.setDoOverrideVersion(eq(false))).thenReturn(this.configuration);
-                when(this.configuration.setOverrideVersion((String) isNull())).thenReturn(this.configuration);
                 
                 when(this.build.getEnvironment(same(this.listener))).thenReturn(this.environment);
                 
@@ -704,10 +744,6 @@ public class VersionNumberBuilderTest {
                 
                 verify(this.configuration, times(1)).getDoOverrideVersion();
                 verify(this.retriever, times(1)).loadVersion();
-                verify(this.committer, times(1)).saveVersion(same(version1));
-                
-                verify(this.configuration, times(1)).setDoOverrideVersion(eq(false));
-                verify(this.configuration, times(1)).setOverrideVersion((String) isNull());
                 
                 verify(this.configuration, times(1)).getFieldToIncrement();
                 verify(this.updater, times(1)).incrementSingleVersionComponent(same(version1), same(fieldToIncrement));
@@ -721,7 +757,6 @@ public class VersionNumberBuilderTest {
                 verify(this.committer, times(1)).saveVersion(same(version3));
                 
                 verify(this.configuration, times(1)).getDoEnvExport();
-            } catch (AssertionError ex) {
             } catch (Throwable t) {
                 fail(
                     "Uncaught exception (should not have been thrown): "
@@ -741,9 +776,6 @@ public class VersionNumberBuilderTest {
                 final Version version1 = mock(Version.class);
                 when(this.configuration.getDoOverrideVersion()).thenReturn(false);
                 when(this.retriever.loadVersion()).thenReturn(version1);
-                
-                when(this.configuration.setDoOverrideVersion(eq(false))).thenReturn(this.configuration);
-                when(this.configuration.setOverrideVersion((String) isNull())).thenReturn(this.configuration);
                 
                 when(this.build.getEnvironment(same(this.listener))).thenReturn(this.environment);
                 
@@ -776,10 +808,6 @@ public class VersionNumberBuilderTest {
                 
                 verify(this.configuration, times(1)).getDoOverrideVersion();
                 verify(this.retriever, times(1)).loadVersion();
-                verify(this.committer, times(1)).saveVersion(same(version1));
-                
-                verify(this.configuration, times(1)).setDoOverrideVersion(eq(false));
-                verify(this.configuration, times(1)).setOverrideVersion((String) isNull());
                 
                 verify(this.configuration, times(1)).getFieldToIncrement();
                 verify(this.updater, times(1)).incrementSingleVersionComponent(same(version1), same(fieldToIncrement));
@@ -792,12 +820,145 @@ public class VersionNumberBuilderTest {
                 verify(this.committer, times(1)).saveVersion(same(version2));
                 
                 verify(this.configuration, times(1)).getDoEnvExport();
-                verify(version1, times(1)).toString();
-                verify(version2, times(1)).toString();
                 verify(this.descriptor, times(1)).getPreviousVersionEnvVariable();
                 verify(this.descriptor, times(1)).getCurrentVersionEnvVariable();
                 verify(this.exporter, times(1)).addVariableToExport(same(previousVersionVariable), same(previousVersion));
                 verify(this.exporter, times(1)).addVariableToExport(same(currentVersionVariable), same(currentVersion));
+            } catch (Throwable t) {
+                fail(
+                    "Uncaught exception (should not have been thrown): "
+                        + t.getClass().getSimpleName()
+                        + " - "
+                        + t.getMessage()
+                );
+            }
+        }
+        
+        /**
+         * Test of perform method, of class VersionNumberBuilder.
+         */
+        @Test
+        public void testPerformWithSetBuildNameAndDescription() {
+            try {
+                final Version version1 = mock(Version.class);
+                when(this.configuration.getDoOverrideVersion()).thenReturn(false);
+                when(this.retriever.loadVersion()).thenReturn(version1);
+                
+                when(this.build.getEnvironment(same(this.listener))).thenReturn(this.environment);
+                
+                final String fieldToIncrement = "FIELD TO INCREMENT";
+                final Version version2 = mock(Version.class);
+                when(this.configuration.getFieldToIncrement()).thenReturn(fieldToIncrement);
+                when(this.updater.incrementSingleVersionComponent(same(version1), same(fieldToIncrement))).thenReturn(version2);
+                
+                when(this.configuration.getBaseMajorOnEnvVariable()).thenReturn(false);
+                when(this.configuration.getBaseMinorOnEnvVariable()).thenReturn(false);
+                
+                when(this.configuration.getPreReleaseVersion()).thenReturn(null);
+                
+                when(this.committer.saveVersion(same(version2))).thenReturn(true);
+                
+                when(this.configuration.getDoEnvExport()).thenReturn(false);
+                
+                when(this.configuration.getDoSetNameOrDescription()).thenReturn(true);
+                
+                String newBuildName = "New build name";
+                String newBuildDescription = " New build description ";
+                final String tokenisedBuildName = "Tokenised build name";
+                final String tokenisedBuildDescription = "Tokenised build name";
+                when(this.configuration.getNewBuildName()).thenReturn(newBuildName);
+                when(this.configuration.getNewBuildDescription()).thenReturn(newBuildDescription);
+                
+                when(this.tokenExpander.expand(eq(newBuildName), same(this.build), same(this.listener))).thenReturn(tokenisedBuildName);
+                when(this.tokenExpander.expand(eq(newBuildDescription.trim()), same(this.build), same(this.listener))).thenReturn(tokenisedBuildDescription);
+                
+                doNothing().when(this.build).setDisplayName(eq(tokenisedBuildName));
+                doNothing().when(this.build).setDescription(eq(tokenisedBuildDescription));
+                
+                assertTrue(this.builder.perform(this.build, this.launcher, this.listener));
+                
+                verify(this.configuration, times(1)).getDoOverrideVersion();
+                verify(this.retriever, times(1)).loadVersion();
+                
+                verify(this.configuration, times(1)).getFieldToIncrement();
+                verify(this.updater, times(1)).incrementSingleVersionComponent(same(version1), same(fieldToIncrement));
+                
+                verify(this.configuration, times(1)).getBaseMajorOnEnvVariable();
+                verify(this.configuration, times(1)).getBaseMinorOnEnvVariable();
+                
+                verify(this.configuration, times(1)).getPreReleaseVersion();
+                
+                verify(this.committer, times(1)).saveVersion(same(version2));
+                
+                verify(this.configuration, times(1)).getDoEnvExport();
+                verify(this.configuration, times(1)).getDoSetNameOrDescription();
+                
+                verify(this.configuration, times(1)).getNewBuildName();
+                verify(this.configuration, times(1)).getNewBuildDescription();
+
+                verify(this.tokenExpander, times(1)).expand(eq(newBuildName), same(this.build), same(this.listener));
+                verify(this.tokenExpander, times(1)).expand(eq(newBuildDescription.trim()), same(this.build), same(this.listener));
+                
+                verify(this.build, times(1)).setDisplayName(eq(tokenisedBuildName));
+                verify(this.build, times(1)).setDescription(eq(tokenisedBuildDescription));
+
+            } catch (Throwable t) {
+                fail(
+                    "Uncaught exception (should not have been thrown): "
+                        + t.getClass().getSimpleName()
+                        + " - "
+                        + t.getMessage()
+                );
+            }
+        }
+        
+        /**
+         * Test of perform method, of class VersionNumberBuilder.
+         */
+        @Test
+        public void testPerformWithoutSetBuildNameAndDescription() {
+            try {
+                final Version version1 = mock(Version.class);
+                when(this.configuration.getDoOverrideVersion()).thenReturn(false);
+                when(this.retriever.loadVersion()).thenReturn(version1);
+                
+                when(this.build.getEnvironment(same(this.listener))).thenReturn(this.environment);
+                
+                final String fieldToIncrement = "FIELD TO INCREMENT";
+                final Version version2 = mock(Version.class);
+                when(this.configuration.getFieldToIncrement()).thenReturn(fieldToIncrement);
+                when(this.updater.incrementSingleVersionComponent(same(version1), same(fieldToIncrement))).thenReturn(version2);
+                
+                when(this.configuration.getBaseMajorOnEnvVariable()).thenReturn(false);
+                when(this.configuration.getBaseMinorOnEnvVariable()).thenReturn(false);
+                
+                when(this.configuration.getPreReleaseVersion()).thenReturn(null);
+                
+                when(this.committer.saveVersion(same(version2))).thenReturn(true);
+                
+                when(this.configuration.getDoEnvExport()).thenReturn(false);
+                
+                when(this.configuration.getDoSetNameOrDescription()).thenReturn(false);
+                
+                assertTrue(this.builder.perform(this.build, this.launcher, this.listener));
+                
+                verify(this.configuration, times(1)).getDoOverrideVersion();
+                verify(this.retriever, times(1)).loadVersion();
+                verify(this.committer, times(1)).saveVersion(same(version1));
+                
+                verify(this.configuration, times(1)).getFieldToIncrement();
+                verify(this.updater, times(1)).incrementSingleVersionComponent(same(version1), same(fieldToIncrement));
+                
+                verify(this.configuration, times(1)).getBaseMajorOnEnvVariable();
+                verify(this.configuration, times(1)).getBaseMinorOnEnvVariable();
+                
+                verify(this.configuration, times(1)).getPreReleaseVersion();
+                
+                verify(this.committer, times(1)).saveVersion(same(version2));
+                
+                verify(this.configuration, times(1)).getDoEnvExport();
+                verify(this.configuration, times(1)).getDoSetNameOrDescription();
+
             } catch (AssertionError ex) {
             } catch (Throwable t) {
                 fail(
@@ -820,9 +981,7 @@ public class VersionNumberBuilderTest {
         }
         
     }
-    
-    
-    
+
     @RunWith(MockitoJUnitRunner.class)
     public static class DescriptorImplTest {
         
@@ -873,6 +1032,24 @@ public class VersionNumberBuilderTest {
         }
         
         @Test
+        public void testIsApplicable() {
+            assertTrue(this.descriptor.isApplicable(null));
+        }
+        
+        @Test
+        public void testDoCheckOverrideVersion() {
+            assertEquals(FormValidation.ok(), this.descriptor.doCheckOverrideVersion("1.0.0"));
+        }
+        
+        @Test
+        public void testDoCheckOverrideVersionHandlesParseException() {
+            FormValidation error = this.descriptor.doCheckOverrideVersion("jibberish");
+            
+            assertEquals(error.kind, Kind.ERROR);
+            assertEquals("Please enter a valid semantic version string", error.getMessage());
+        }
+        
+        @Test
         public void testGetDisplayName() {
             assertEquals("Update versioning", this.descriptor.getDisplayName());
         }
@@ -895,7 +1072,7 @@ public class VersionNumberBuilderTest {
             
             assertSame(
                 result,
-                this.globalConfiguration.getPreviousVersionEnvVariable()
+                this.descriptor.getPreviousVersionEnvVariable()
             );
             
             verify(this.globalConfiguration, times(1)).getPreviousVersionEnvVariable();
@@ -909,7 +1086,7 @@ public class VersionNumberBuilderTest {
             
             assertSame(
                 result,
-                this.globalConfiguration.getCurrentVersionEnvVariable()
+                this.descriptor.getCurrentVersionEnvVariable()
             );
             
             verify(this.globalConfiguration, times(1)).getCurrentVersionEnvVariable();

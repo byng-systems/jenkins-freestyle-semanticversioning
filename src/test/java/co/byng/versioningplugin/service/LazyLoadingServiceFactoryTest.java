@@ -204,4 +204,22 @@ public class LazyLoadingServiceFactoryTest {
         assertTrue(this.factory.createVersionFactory(null) instanceof VersionFactory);
     }
     
+    /**
+     * Test of createTokenExpansionProvider method, of class LazyLoadingServiceFactory
+     */
+    @Test
+    public void testCreateTokenExpansionProviderReturnsPassedValueIfNotNull() {
+        TokenExpansionProvider tokenProvider = mock(TokenExpansionProvider.class);
+        
+        assertSame(tokenProvider, this.factory.createTokenExpansionProvider(tokenProvider));
+    }
+    
+    /**
+     * Test of createTokenExpansionProvider method, of class LazyLoadingServiceFactory
+     */
+    @Test
+    public void testCreateTokenExpansionProviderCreatesDefaultIfNull() {
+        assertTrue(this.factory.createTokenExpansionProvider(null) instanceof SingletonCallTokenExpansionProvider);
+    }
+    
 }

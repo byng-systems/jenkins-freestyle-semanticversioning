@@ -26,11 +26,13 @@ package co.byng.versioningplugin;
 import co.byng.versioningplugin.configuration.OptionsProvider;
 import co.byng.versioningplugin.configuration.VersioningConfiguration;
 import co.byng.versioningplugin.configuration.VersioningConfigurationWriteableProvider;
+import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.Environment;
 import hudson.util.ListBoxModel;
+import java.util.Map;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
@@ -75,6 +77,9 @@ public class VersionNumberBuildWrapperTest {
             final String preReleaseVersion = "PRE_RELEASE";
             final String fieldToIncrement = "INCREMENT";
             final boolean doEnvExport = false;
+            final boolean doSetNameOrDescription = false;
+            final String newBuildName = "NEW BUILD NAME";
+            final String newBuildDescription = "NEW BUILD DESCRIPTION";
 
             final VersionNumberBuildWrapper buildWrapper = new VersionNumberBuildWrapper(
                 doOverrideVersion,
@@ -86,7 +91,10 @@ public class VersionNumberBuildWrapperTest {
                 minorEnvVariable,
                 preReleaseVersion,
                 fieldToIncrement,
-                doEnvExport
+                doEnvExport,
+                doSetNameOrDescription,
+                newBuildName,
+                newBuildDescription
             );
 
             final VersionNumberBuilder builder = buildWrapper.getBuilder();
@@ -106,6 +114,9 @@ public class VersionNumberBuildWrapperTest {
             assertSame(preReleaseVersion, configuration.getPreReleaseVersion());
             assertSame(fieldToIncrement, configuration.getFieldToIncrement());
             assertSame(doEnvExport, configuration.getDoEnvExport());
+            assertSame(doSetNameOrDescription, configuration.getDoSetNameOrDescription());
+            assertSame(newBuildName, configuration.getNewBuildName());
+            assertSame(newBuildDescription, configuration.getNewBuildDescription());
         }
 
         /**
@@ -117,11 +128,22 @@ public class VersionNumberBuildWrapperTest {
             final Launcher launcher = mock(Launcher.class);
             final BuildListener listener = mock(BuildListener.class);
 
-            when(this.builder.perform(eq(build), eq(launcher), eq(listener))).thenReturn(true);
-
-            assertTrue(this.buildWrapper.setUp(build, launcher, listener) instanceof Environment);
-
+            when(this.builder.perform(same(build), same(launcher), same(listener))).thenReturn(true);
+            
+            final Map<String, String> myEnvVars = mock(Map.class);
+            EnvVars buildEnvVars = mock(EnvVars.class);
+            
+            when(build.getEnvironment(same(listener))).thenReturn(buildEnvVars);
+            doNothing().when(buildEnvVars).putAll(same(myEnvVars));
+            
+            Environment environment = this.buildWrapper.setUp(build, launcher, listener);
+            assertNotNull(environment);
+            
+            environment.buildEnvVars(myEnvVars);
+            
             verify(this.builder, times(1)).perform(eq(build), eq(launcher), eq(listener));
+            verify(build, times(1)).getEnvironment(same(listener));
+            verify(buildEnvVars, times(1)).putAll(same(myEnvVars));
         }
 
         /**
@@ -146,6 +168,17 @@ public class VersionNumberBuildWrapperTest {
             assertSame(this.builder, this.buildWrapper.getBuilder());
         }
 
+        @Test
+        public void testGetDoOverrideVersion() {
+            boolean result = true;
+            
+            when(this.builder.getDoOverrideVersion()).thenReturn(result);
+            
+            assertSame(result, this.buildWrapper.getDoOverrideVersion());
+            
+            verify(this.builder, times(1)).getDoOverrideVersion();
+        }
+        
         /**
          * Test of getOverrideVersion method, of class VersionNumberBuildWrapper.
          */
@@ -271,6 +304,41 @@ public class VersionNumberBuildWrapperTest {
 
             verify(this.builder, times(1)).getDoEnvExport();
         }
+        
+        @Test
+        public void testGetDoSetNameOrDescription() {
+            boolean result = false;
+            
+            when(this.builder.getDoSetNameOrDescription()).thenReturn(result);
+            
+            assertSame(result, this.buildWrapper.getDoSetNameOrDescription());
+            
+            verify(this.builder, times(1)).getDoSetNameOrDescription();
+        }
+        
+        @Test
+        public void testGetNewBuildName()
+        {
+            String result = "buildName";
+            
+            when(this.builder.getNewBuildName()).thenReturn(result);
+            
+            assertSame(result, this.buildWrapper.getNewBuildName());
+            
+            verify(this.builder, times(1)).getNewBuildName();
+        }
+        
+        @Test
+        public void testGetNewBuildDescription()
+        {
+            String result = "buildDescription";
+            
+            when(this.builder.getNewBuildDescription()).thenReturn(result);
+            
+            assertSame(result, this.buildWrapper.getNewBuildDescription());
+            
+            verify(this.builder, times(1)).getNewBuildDescription();
+        }
     }
     
     @RunWith(MockitoJUnitRunner.class)
@@ -323,6 +391,11 @@ public class VersionNumberBuildWrapperTest {
                 "/" + VersionNumberBuilder.class.getName().replace(".", "/") + "/config.jelly",
                 this.descriptor.getConfigPage()
             );
+        }
+        
+        @Test
+        public void testGetGlobalConfigPage() {
+            assertNull(this.descriptor.getGlobalConfigPage());
         }
         
         @Test
