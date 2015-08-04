@@ -108,4 +108,13 @@ public class LazyLoadingServiceFactory implements ServiceFactory {
         return versionFactory;
     }
 
+    @Override
+    public TokenExpansionProvider createTokenExpansionProvider(TokenExpansionProvider tokenExpansionProvider) {
+        if  (tokenExpansionProvider == null) {
+            return new SingletonCallTokenExpansionProvider();
+        }
+        
+        return tokenExpansionProvider;
+    }
+
 }

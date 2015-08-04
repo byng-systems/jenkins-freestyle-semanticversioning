@@ -54,4 +54,6 @@ public interface ServiceFactory {
     public VariableExporter createVarExporter(VariableExporter currentVarExporter);
     
     public VersionFactory createVersionFactory(VersionFactory versionFactory);
+    
+    public TokenExpansionProvider createTokenExpansionProvider(TokenExpansionProvider tokenExpansionProvider);
 }
