@@ -50,4 +50,18 @@
         <f:checkbox default="true"/>
     </f:entry>
 
+    <f:optionalBlock
+        name="doSetNameOrDescription"
+        title="Modify the build name and/or description"
+        inline="true"
+        checked="${instance.doSetNameOrDescription}"
+    >
+        <f:entry title="Set build name to:" field="newBuildName">
+            <f:textbox default=""/>
+        </f:entry>
+        <f:entry title="Set build description to:" field="newBuildDescription">
+            <f:textbox default=""/>
+        </f:entry>
+    </f:optionalBlock>
+    
 </j:jelly>
