@@ -39,6 +39,10 @@ package co.byng.versioningplugin.configuration;
     protected String preReleaseVersion;
     protected String fieldToIncrement;
     protected boolean doEnvExport = true;
+    protected boolean doSetNameOrDescription = false;
+    protected String newBuildName;
+    protected String newBuildDescription;
+    
     
     @Override
     public boolean getDoOverrideVersion() {
@@ -88,6 +92,21 @@ package co.byng.versioningplugin.configuration;
     @Override
     public boolean getDoEnvExport() {
         return doEnvExport;
+    }
+
+    @Override
+    public boolean getDoSetNameOrDescription() {
+        return doSetNameOrDescription;
+    }
+
+    @Override
+    public String getNewBuildName() {
+        return newBuildName;
+    }
+
+    @Override
+    public String getNewBuildDescription() {
+        return newBuildDescription;
     }
 
     @Override
@@ -156,6 +175,27 @@ package co.byng.versioningplugin.configuration;
     @Override
     public VersioningConfigurationWriteableProvider setDoEnvExport(boolean doEnvExport) {
         this.doEnvExport = doEnvExport;
+        
+        return this;
+    }
+
+    @Override
+    public VersioningConfigurationWriteableProvider setDoSetNameOrDescription(boolean doSetNameOrDescription) {
+        this.doSetNameOrDescription = doSetNameOrDescription;
+        
+        return this;
+    }
+
+    @Override
+    public VersioningConfigurationWriteableProvider setNewBuildName(String newBuildName) {
+        this.newBuildName = newBuildName;
+        
+        return this;
+    }
+
+    @Override
+    public VersioningConfigurationWriteableProvider setNewBuildDescription(String newBuildDescription) {
+        this.newBuildDescription = newBuildDescription;
         
         return this;
     }

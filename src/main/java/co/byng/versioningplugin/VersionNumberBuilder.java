@@ -11,6 +11,7 @@ import co.byng.versioningplugin.handler.VersionRetrievable;
 import co.byng.versioningplugin.service.FileAbsolutePathProvider;
 import co.byng.versioningplugin.service.LazyLoadingServiceFactory;
 import co.byng.versioningplugin.service.ServiceFactory;
+import co.byng.versioningplugin.service.TokenExpansionProvider;
 import co.byng.versioningplugin.versioning.VersionNumberUpdater;
 import co.byng.versioningplugin.versioning.VersionFactory;
 import com.github.zafarkhaja.semver.ParseException;
@@ -26,6 +27,7 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import java.io.IOException;
+import java.io.PrintStream;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -56,6 +58,7 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
     protected transient VersionRetrievable retriever;
     protected transient VersionCommittable committer;
     protected transient VersionFactory versionFactory;
+    protected transient TokenExpansionProvider tokenExpander;
     
     
     
@@ -63,7 +66,7 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
         if (configuration == null) {
             throw new IllegalArgumentException("Configuration cannot be given as null");
         }
-        
+
         this.configuration = configuration;
         this.serviceFactory = new LazyLoadingServiceFactory(new FileAbsolutePathProvider());
     }
@@ -79,7 +82,10 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
         String minorEnvVariable,
         String preReleaseVersion,
         String fieldToIncrement,
-        boolean doEnvExport
+        boolean doEnvExport,
+        boolean doSetNameOrDescription,
+        String newBuildName,
+        String newBuildDescription
     ) throws IllegalArgumentException {
         this(
             new VersioningConfiguration()
@@ -93,11 +99,16 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
                 .setPreReleaseVersion(preReleaseVersion)
                 .setFieldToIncrement(fieldToIncrement)
                 .setDoEnvExport(doEnvExport)
+                .setDoSetNameOrDescription(doSetNameOrDescription)
+                .setNewBuildName(newBuildName)
+                .setNewBuildDescription(newBuildDescription)
         );
     }
     
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
+        PrintStream logger = listener.getLogger();
+        
         try {
             this.lazyLoadServices(build.getProject());
             VariableExporter varExporter = this.serviceFactory.createVarExporter(null);
@@ -145,7 +156,7 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
                 currentVersion = this.updater.setPreReleaseVersion(currentVersion, preReleaseVersion);
             }
             
-            listener.getLogger().append("Updating to " + currentVersion + "\n");
+            logger.append("Updating to " + currentVersion + "\n");
             this.committer.saveVersion(currentVersion);
             
             if (this.getDoEnvExport()) {
@@ -162,13 +173,56 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
                 varExporter.export(build);
             }
             
+            this.performSetBuildNameOrDescription(build, listener);
+            
             return true;
 
         } catch (Throwable t) {
-            t.printStackTrace(listener.getLogger());
+            t.printStackTrace(logger);
         }
 
         return false;
+    }
+    
+    protected void performSetBuildNameOrDescription(
+        AbstractBuild build,
+        BuildListener listener
+    ) throws IOException {
+        if (this.getDoSetNameOrDescription() == false) {
+            return;
+        }
+        
+        String newBuildName = this.getNewBuildName();
+        if (
+            newBuildName != null
+            && !(newBuildName = newBuildName.trim()).isEmpty()
+        ) {
+            String tokenisedBuildName = this.tokenExpander.expand(
+                newBuildName,
+                build,
+                listener
+            );
+            
+            if (tokenisedBuildName != null) {
+                build.setDisplayName(tokenisedBuildName);
+            }
+        }
+        
+        String newBuildDescription = this.getNewBuildDescription();
+        if (
+            newBuildDescription != null
+            && !(newBuildDescription = newBuildDescription.trim()).isEmpty()
+        ) {
+            String tokenisedBuildDescription = this.tokenExpander.expand(
+                newBuildDescription,
+                build,
+                listener
+            );
+            
+            if (tokenisedBuildDescription != null) {
+                build.setDescription(tokenisedBuildDescription);
+            }
+        }
     }
     
     protected void lazyLoadServices(AbstractProject project) throws IOException {
@@ -193,6 +247,8 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
         this.updater = this.serviceFactory.createUpdater(this.updater);
         
         this.versionFactory = this.serviceFactory.createVersionFactory(this.versionFactory);
+        
+        this.tokenExpander = this.serviceFactory.createTokenExpansionProvider(this.tokenExpander);
     }
 
     public VersioningConfigurationWriteableProvider getConfiguration() {
@@ -219,6 +275,10 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
         return this.versionFactory;
     }
 
+    public TokenExpansionProvider getTokenExpander() {
+        return tokenExpander;
+    }
+
     public void setConfiguration(VersioningConfigurationWriteableProvider configuration) {
         this.configuration = configuration;
     }
@@ -241,6 +301,10 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
 
     public void setVersionFactory(VersionFactory versionFactory) {
         this.versionFactory = versionFactory;
+    }
+
+    public void setTokenExpander(TokenExpansionProvider tokenExpander) {
+        this.tokenExpander = tokenExpander;
     }
     
     @Override
@@ -291,6 +355,21 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
     @Override
     public boolean getDoEnvExport() {
         return this.configuration.getDoEnvExport();
+    }
+
+    @Override
+    public boolean getDoSetNameOrDescription() {
+        return this.configuration.getDoSetNameOrDescription();
+    }
+
+    @Override
+    public String getNewBuildName() {
+        return this.configuration.getNewBuildName();
+    }
+
+    @Override
+    public String getNewBuildDescription() {
+        return this.configuration.getNewBuildDescription();
     }
     
     @Override

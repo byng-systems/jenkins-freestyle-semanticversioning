@@ -26,6 +26,7 @@ package co.byng.versioningplugin;
 import co.byng.versioningplugin.configuration.OptionsProvider;
 import co.byng.versioningplugin.configuration.VersioningConfiguration;
 import co.byng.versioningplugin.configuration.VersioningConfigurationProvider;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
@@ -52,16 +53,19 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
 
     @DataBoundConstructor
     public VersionNumberBuildWrapper(
-            boolean doOverrideVersion,
-            String overrideVersion,
-            String propertyFilePath,
-            boolean baseMajorOnEnvVariable,
-            String majorEnvVariable,
-            boolean baseMinorOnEnvVariable,
-            String minorEnvVariable,
-            String preReleaseVersion,
-            String fieldToIncrement,
-            boolean doEnvExport
+        boolean doOverrideVersion,
+        String overrideVersion,
+        String propertyFilePath,
+        boolean baseMajorOnEnvVariable,
+        String majorEnvVariable,
+        boolean baseMinorOnEnvVariable,
+        String minorEnvVariable,
+        String preReleaseVersion,
+        String fieldToIncrement,
+        boolean doEnvExport,
+        boolean doSetNameOrDescription,
+        String newBuildName,
+        String newBuildDescription
     ) throws IllegalArgumentException {
         this(
             new VersionNumberBuilder(
@@ -76,6 +80,9 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
                 .setPreReleaseVersion(preReleaseVersion)
                 .setFieldToIncrement(fieldToIncrement)
                 .setDoEnvExport(doEnvExport)
+                .setDoSetNameOrDescription(doSetNameOrDescription)
+                .setNewBuildName(newBuildName)
+                .setNewBuildDescription(newBuildDescription)
             )
         );
     }
@@ -88,10 +95,16 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
     ) throws IOException, InterruptedException {
         this.builder.perform(build, launcher, listener);
 
-        return new Environment() {};
+        final EnvVars envVars = build.getEnvironment(listener);
+        return new Environment() {
+
+            @Override
+            public void buildEnvVars(Map<String, String> env) {
+                envVars.putAll(env);
+            }
+
+        };
     }
-    
-    
 
     public VersionNumberBuilder getBuilder() {
         return builder;
@@ -151,6 +164,21 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
         return this.builder.getDoEnvExport();
     }
 
+    @Override
+    public boolean getDoSetNameOrDescription() {
+        return this.builder.getDoSetNameOrDescription();
+    }
+
+    @Override
+    public String getNewBuildName() {
+        return this.builder.getNewBuildName();
+    }
+
+    @Override
+    public String getNewBuildDescription() {
+        return this.builder.getNewBuildDescription();
+    }
+    
     @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl) super.getDescriptor();

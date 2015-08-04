@@ -49,4 +49,10 @@ public interface VersioningConfigurationProvider {
     
     public boolean getDoEnvExport();
     
+    public boolean getDoSetNameOrDescription();
+    
+    public String getNewBuildName();
+    
+    public String getNewBuildDescription();
+    
 }

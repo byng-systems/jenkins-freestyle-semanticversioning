@@ -49,4 +49,10 @@ public interface VersioningConfigurationWriteableProvider extends VersioningConf
     
     public VersioningConfigurationWriteableProvider setDoEnvExport(boolean doEnvExport);
     
+    public VersioningConfigurationWriteableProvider setDoSetNameOrDescription(boolean doSetNameOrDescription);
+    
+    public VersioningConfigurationWriteableProvider setNewBuildName(String newBuildName);
+    
+    public VersioningConfigurationWriteableProvider setNewBuildDescription(String newBuildDescription);
+    
 }
