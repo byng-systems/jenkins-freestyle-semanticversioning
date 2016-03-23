@@ -545,6 +545,7 @@ public class VersionNumberBuilderTest {
                 when(this.configuration.getDoOverrideVersion()).thenReturn(true);
                 when(this.configuration.getTemporaryOverride()).thenReturn(true);
                 when(this.configuration.getOverrideVersion()).thenReturn(overrideVersion);
+                when(this.tokenExpander.expand(same(overrideVersion), same(this.build), same(this.listener))).thenReturn(overrideVersion);
                 when(this.versionFactory.buildVersionFromString(same(overrideVersion))).thenReturn(version1);
                 when(this.committer.saveVersion(same(version1))).thenReturn(true);
                 
@@ -572,6 +573,7 @@ public class VersionNumberBuilderTest {
                 verify(this.configuration, times(1)).getDoOverrideVersion();
                 verify(this.configuration, times(1)).getTemporaryOverride();
                 verify(this.configuration, times(1)).getOverrideVersion();
+                verify(this.tokenExpander, times(1)).expand(same(overrideVersion), same(this.build), same(this.listener));
                 verify(this.versionFactory, times(1)).buildVersionFromString(same(overrideVersion));
                 verify(this.committer, times(1)).saveVersion(same(version1));
                 
@@ -1086,10 +1088,15 @@ public class VersionNumberBuilderTest {
         
         @Test
         public void testDoCheckOverrideVersionHandlesParseException() {
-            FormValidation error = this.descriptor.doCheckOverrideVersion("jibberish");
+            FormValidation warning = this.descriptor.doCheckOverrideVersion("jibberish");
             
-            assertEquals(error.kind, Kind.ERROR);
-            assertEquals("Please enter a valid semantic version string", error.getMessage());
+            assertEquals(warning.kind, Kind.WARNING);
+            assertEquals(
+                "That does not appear to be a valid semantic versioning string; "
+                        + "if using a token macro, then please be aware that this must resolve "
+                        + "at build time",
+                warning.getMessage()
+            );
         }
         
         @Test

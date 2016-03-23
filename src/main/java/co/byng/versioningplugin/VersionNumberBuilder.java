@@ -11,6 +11,7 @@ import co.byng.versioningplugin.handler.VersionRetrievable;
 import co.byng.versioningplugin.service.FileAbsolutePathProvider;
 import co.byng.versioningplugin.service.LazyLoadingServiceFactory;
 import co.byng.versioningplugin.service.ServiceFactory;
+import co.byng.versioningplugin.service.SingletonCallTokenExpansionProvider;
 import co.byng.versioningplugin.service.TokenExpansionProvider;
 import co.byng.versioningplugin.versioning.VersionNumberUpdater;
 import co.byng.versioningplugin.versioning.VersionFactory;
@@ -22,6 +23,8 @@ import hudson.Extension;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.AbstractProject;
+import hudson.model.Job;
+import hudson.model.TaskListener;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.util.FormValidation;
@@ -29,6 +32,7 @@ import hudson.util.ListBoxModel;
 import java.io.IOException;
 import java.io.PrintStream;
 import net.sf.json.JSONObject;
+import org.jenkinsci.plugins.tokenmacro.TokenMacro;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -59,9 +63,9 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
     protected transient VersionCommittable committer;
     protected transient VersionFactory versionFactory;
     protected transient TokenExpansionProvider tokenExpander;
-    
-    
-    
+
+
+
     public VersionNumberBuilder(VersioningConfigurationWriteableProvider configuration) throws IllegalArgumentException {
         if (configuration == null) {
             throw new IllegalArgumentException("Configuration cannot be given as null");
@@ -114,10 +118,17 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
         try {
             this.lazyLoadServices(build.getProject());
             VariableExporter varExporter = this.serviceFactory.createVarExporter(null);
-            
+
             Version currentVersion;
             if (this.getDoOverrideVersion()) {
-                currentVersion = this.versionFactory.buildVersionFromString(this.getOverrideVersion());
+                currentVersion = this.versionFactory.buildVersionFromString(
+                    this.tokenExpander.expand(
+                        this.getOverrideVersion(),
+                        build,
+                        listener
+                    )
+                );
+
                 this.committer.saveVersion(currentVersion);
 
                 if (this.getTemporaryOverride()) {
@@ -462,7 +473,7 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
 
         private VersioningGlobalConfigurationWriteableProvider globalConfiguration;
         private OptionsProvider optionsProvider;
-    
+
         public DescriptorImpl(
             VersioningGlobalConfigurationWriteableProvider globalConfiguration,
             OptionsProvider optionsProvider
@@ -479,7 +490,7 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
                 new OptionsProvider()
             );
         }
-        
+
         /**
          * 
          * @param aClass
@@ -493,7 +504,11 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
             try {
                 Version.valueOf(overrideVersion);
             } catch (ParseException ex) {
-                return FormValidation.error("Please enter a valid semantic version string");
+                return FormValidation.warning(
+                    "That does not appear to be a valid semantic versioning string; "
+                            + "if using a token macro, then please be aware that this must resolve "
+                            + "at build time"
+                );
             }
             
             return FormValidation.ok();
@@ -531,7 +546,7 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
             
             this.optionsProvider = optionsProvider;
         }
-    
+        
         @Override
         public String getPreviousVersionEnvVariable() {
             return this.globalConfiguration.getPreviousVersionEnvVariable();
