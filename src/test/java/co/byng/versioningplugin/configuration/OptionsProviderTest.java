@@ -129,6 +129,11 @@ public class OptionsProviderTest {
             VersionNumberUpdater.PreReleaseVersion.BUILD
         );
 
+        expectedModel.add(
+            "Hotfix (hotfix)",
+            VersionNumberUpdater.PreReleaseVersion.HOTFIX
+        );
+
         this.compareActualWithExpected(
             expectedModel,
             this.optionsProvider.getPreReleaseVersionItems()

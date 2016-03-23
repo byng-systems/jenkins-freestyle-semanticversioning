@@ -84,6 +84,11 @@ public class OptionsProvider {
             VersionNumberUpdater.PreReleaseVersion.BUILD
         );
 
+        model.add(
+            "Hotfix (hotfix)",
+            VersionNumberUpdater.PreReleaseVersion.HOTFIX
+        );
+
         return model;
     }
 
