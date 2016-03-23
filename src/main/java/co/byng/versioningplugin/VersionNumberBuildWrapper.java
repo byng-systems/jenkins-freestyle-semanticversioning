@@ -73,6 +73,7 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
                 new VersioningConfiguration()
                 .setDoOverrideVersion(doOverrideVersion)
                 .setOverrideVersion(overrideVersion)
+                .setTemporaryOverride(temporaryOverride)
                 .setPropertyFilePath(propertyFilePath)
                 .setBaseMajorOnEnvVariable(baseMajorOnEnvVariable)
                 .setMajorEnvVariable(majorEnvVariable)

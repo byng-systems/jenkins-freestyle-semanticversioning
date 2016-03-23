@@ -32,6 +32,8 @@ public interface VersioningConfigurationWriteableProvider extends VersioningConf
     public VersioningConfigurationWriteableProvider setDoOverrideVersion(boolean doOverrideVersion);
 
     public VersioningConfigurationWriteableProvider setOverrideVersion(String overrideVersion);
+    
+    public VersioningConfigurationWriteableProvider setTemporaryOverride(boolean temporaryOverride);
 
     public VersioningConfigurationWriteableProvider setPropertyFilePath(String propertyFilePath);
 

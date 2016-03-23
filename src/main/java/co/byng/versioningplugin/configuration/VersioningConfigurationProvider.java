@@ -46,7 +46,7 @@ public interface VersioningConfigurationProvider {
     public String getMinorEnvVariable();
 
     public String getPreReleaseVersion();
-
+    
     public String getFieldToIncrement();
     
     public boolean getDoEnvExport();

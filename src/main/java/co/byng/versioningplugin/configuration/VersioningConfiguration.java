@@ -27,7 +27,7 @@ package co.byng.versioningplugin.configuration;
  *
  * @author M.D.Ward <matthew.ward@byng-systems.com>
  */
- public class VersioningConfiguration implements VersioningConfigurationWriteableProvider {
+public class VersioningConfiguration implements VersioningConfigurationWriteableProvider {
     
     protected boolean doOverrideVersion = true;
     protected String overrideVersion;
@@ -127,6 +127,14 @@ package co.byng.versioningplugin.configuration;
         
         return this;
     }
+
+    @Override
+    public VersioningConfigurationWriteableProvider setTemporaryOverride(boolean temporaryOverride) {
+        this.temporaryOverride = temporaryOverride;
+        
+        return this;
+    }
+    
 
     @Override
     public VersioningConfigurationWriteableProvider setPropertyFilePath(String propertyFilePath) {
