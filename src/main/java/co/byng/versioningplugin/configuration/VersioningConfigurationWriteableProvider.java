@@ -47,6 +47,8 @@ public interface VersioningConfigurationWriteableProvider extends VersioningConf
 
     public VersioningConfigurationWriteableProvider setPreReleaseVersion(String preReleaseVersion);
 
+    public VersioningConfigurationWriteableProvider setPreReleaseSuffix(String preReleaseSuffix);
+
     public VersioningConfigurationWriteableProvider setFieldToIncrement(String fieldToIncrement);
     
     public VersioningConfigurationWriteableProvider setDoEnvExport(boolean doEnvExport);

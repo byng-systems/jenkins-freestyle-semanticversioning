@@ -76,6 +76,7 @@ public class VersionNumberBuildWrapperTest {
             final boolean baseMinorOnEnvVariable = true;
             final String minorEnvVariable = "MINOR ENVVAR";
             final String preReleaseVersion = "PRE_RELEASE";
+            final String preReleaseSuffix = "";
             final String fieldToIncrement = "INCREMENT";
             final boolean doEnvExport = false;
             final boolean doSetNameOrDescription = false;
@@ -92,6 +93,7 @@ public class VersionNumberBuildWrapperTest {
                 baseMinorOnEnvVariable,
                 minorEnvVariable,
                 preReleaseVersion,
+                preReleaseSuffix,
                 fieldToIncrement,
                 doEnvExport,
                 doSetNameOrDescription,

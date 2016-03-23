@@ -62,6 +62,7 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
         boolean baseMinorOnEnvVariable,
         String minorEnvVariable,
         String preReleaseVersion,
+        String preReleaseSuffix,
         String fieldToIncrement,
         boolean doEnvExport,
         boolean doSetNameOrDescription,
@@ -80,6 +81,7 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
                 .setBaseMinorOnEnvVariable(baseMinorOnEnvVariable)
                 .setMinorEnvVariable(minorEnvVariable)
                 .setPreReleaseVersion(preReleaseVersion)
+                .setPreReleaseSuffix(preReleaseSuffix)
                 .setFieldToIncrement(fieldToIncrement)
                 .setDoEnvExport(doEnvExport)
                 .setDoSetNameOrDescription(doSetNameOrDescription)
@@ -159,6 +161,11 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
     @Override
     public String getPreReleaseVersion() {
         return this.builder.getPreReleaseVersion();
+    }
+
+    @Override
+    public String getPreReleaseSuffix() {
+        return this.builder.getPreReleaseSuffix();
     }
 
     @Override

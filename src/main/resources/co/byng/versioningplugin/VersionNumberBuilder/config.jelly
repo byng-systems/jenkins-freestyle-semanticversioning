@@ -14,11 +14,11 @@
             <f:checkbox checked="${instance.temporaryOverride}"/>
         </f:entry>
     </f:optionalBlock>
-    
+
     <f:entry title="Path to the project's properties file" field="propertyFilePath">
         <f:textbox default="version.properties"/>
     </f:entry>
-    
+
     <f:optionalBlock
         name="baseMajorOnEnvVariable"
         title="Set the major version component based on the value of an environment variable"
@@ -29,7 +29,7 @@
             <f:textbox/>
         </f:entry>
     </f:optionalBlock>
-    
+
     <f:optionalBlock
         name="baseMinorOnEnvVariable"
         title="Set the minor version component based on the value of an environment variable"
@@ -40,15 +40,18 @@
             <f:textbox/>
         </f:entry>
     </f:optionalBlock>
-    
+
     <f:entry title="Set pre-release version" field="preReleaseVersion">
         <f:select/>
     </f:entry>
-    
+    <f:entry title="Set pre-release suffix" field="preReleaseSuffix">
+        <f:textbox/>
+    </f:entry>
+
     <f:entry title="Field to increment upon each build" field="fieldToIncrement">
         <f:select/>
     </f:entry>
-    
+
     <f:entry title="Export previous and current versions as environment variables" field="doEnvExport">
         <f:checkbox default="true"/>
     </f:entry>
@@ -66,5 +69,5 @@
             <f:textbox default=""/>
         </f:entry>
     </f:optionalBlock>
-    
+
 </j:jelly>

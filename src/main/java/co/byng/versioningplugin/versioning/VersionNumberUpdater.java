@@ -124,6 +124,7 @@ public class VersionNumberUpdater {
         public static final String RELEASE_CANDIDATE = "rc";
         public static final String NIGHTLY = "nightly";
         public static final String BUILD = "build";
+        public static final String HOTFIX = "hotfix";
     }
     
 }

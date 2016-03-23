@@ -38,6 +38,7 @@ public class VersioningConfiguration implements VersioningConfigurationWriteable
     protected boolean baseMinorOnEnvVariable;
     protected String minorEnvVariable;
     protected String preReleaseVersion;
+    protected String preReleaseSuffix;
     protected String fieldToIncrement;
     protected boolean doEnvExport = true;
     protected boolean doSetNameOrDescription = false;
@@ -87,6 +88,11 @@ public class VersioningConfiguration implements VersioningConfigurationWriteable
     @Override
     public String getPreReleaseVersion() {
         return preReleaseVersion;
+    }
+
+    @Override
+    public String getPreReleaseSuffix() {
+        return preReleaseSuffix;
     }
 
     @Override
@@ -174,6 +180,13 @@ public class VersioningConfiguration implements VersioningConfigurationWriteable
     @Override
     public VersioningConfigurationWriteableProvider setPreReleaseVersion(String preReleaseVersion) {
         this.preReleaseVersion = preReleaseVersion;
+        
+        return this;
+    }
+
+    @Override
+    public VersioningConfigurationWriteableProvider setPreReleaseSuffix(String preReleaseSuffix) {
+        this.preReleaseSuffix = preReleaseSuffix;
         
         return this;
     }

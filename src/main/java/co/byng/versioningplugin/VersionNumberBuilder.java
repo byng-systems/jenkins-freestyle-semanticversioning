@@ -81,6 +81,7 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
         boolean baseMinorOnEnvVariable,
         String minorEnvVariable,
         String preReleaseVersion,
+        String preReleaseSuffix,
         String fieldToIncrement,
         boolean doEnvExport,
         boolean doSetNameOrDescription,
@@ -97,6 +98,7 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
                 .setBaseMinorOnEnvVariable(baseMinorOnEnvVariable)
                 .setMinorEnvVariable(minorEnvVariable)
                 .setPreReleaseVersion(preReleaseVersion)
+                .setPreReleaseSuffix(preReleaseSuffix)
                 .setFieldToIncrement(fieldToIncrement)
                 .setDoEnvExport(doEnvExport)
                 .setDoSetNameOrDescription(doSetNameOrDescription)
@@ -153,10 +155,11 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
                 );
             }
             
-            String preReleaseVersion;
-            if ((preReleaseVersion = this.getPreReleaseVersion()) != null) {
-                currentVersion = this.updater.setPreReleaseVersion(currentVersion, preReleaseVersion);
-            }
+            currentVersion = this.performSetPreReleaseVersion(
+                build,
+                listener,
+                currentVersion
+            );
             
             logger.append("Updating to " + currentVersion + "\n");
             this.committer.saveVersion(currentVersion);
@@ -186,9 +189,35 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
         return false;
     }
     
+    protected Version performSetPreReleaseVersion(
+        final AbstractBuild build,
+        final BuildListener listener,
+        final Version currentVersion
+    ) throws IOException {
+        final String preReleaseVersion = this.getPreReleaseVersion();
+        
+        if (preReleaseVersion != null) {
+            final String preReleaseSuffix = this.getPreReleaseSuffix();
+
+            return this.updater.setPreReleaseVersion(
+                currentVersion,
+                new StringBuilder()
+                    .append(preReleaseVersion)
+                    .append(
+                        preReleaseSuffix != null && !preReleaseSuffix.isEmpty()
+                        ? this.tokenExpander.expand(preReleaseSuffix, build, listener)
+                        : ""
+                    )
+                    .toString()
+            );
+        }
+
+        return currentVersion;
+    }
+    
     protected void performSetBuildNameOrDescription(
-        AbstractBuild build,
-        BuildListener listener
+        final AbstractBuild build,
+        final BuildListener listener
     ) throws IOException {
         if (this.getDoSetNameOrDescription() == false) {
             return;
@@ -352,6 +381,11 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
     @Override
     public String getPreReleaseVersion() {
         return this.configuration.getPreReleaseVersion();
+    }
+
+    @Override
+    public String getPreReleaseSuffix() {
+        return this.configuration.getPreReleaseSuffix();
     }
 
     @Override

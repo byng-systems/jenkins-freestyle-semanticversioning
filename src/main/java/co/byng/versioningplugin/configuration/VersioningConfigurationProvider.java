@@ -47,6 +47,8 @@ public interface VersioningConfigurationProvider {
 
     public String getPreReleaseVersion();
     
+    public String getPreReleaseSuffix();
+    
     public String getFieldToIncrement();
     
     public boolean getDoEnvExport();

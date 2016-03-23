@@ -114,6 +114,7 @@ public class VersionNumberBuilderTest {
             final boolean baseMinorOnEnvVariable = true;
             final String minorEnvVariable = "MINOR ENVVAR";
             final String preReleaseVersion = "PRE_RELEASE";
+            final String preReleaseSuffix = "";
             final String fieldToIncrement = "INCREMENT";
             final boolean doEnvExport = false;
             final boolean doSetNameOrDescription = false;
@@ -129,6 +130,7 @@ public class VersionNumberBuilderTest {
                 baseMinorOnEnvVariable,
                 minorEnvVariable,
                 preReleaseVersion,
+                preReleaseSuffix,
                 fieldToIncrement,
                 doEnvExport,
                 doSetNameOrDescription,
@@ -559,6 +561,7 @@ public class VersionNumberBuilderTest {
                 when(this.configuration.getBaseMajorOnEnvVariable()).thenReturn(false);
                 when(this.configuration.getBaseMinorOnEnvVariable()).thenReturn(false);
                 when(this.configuration.getPreReleaseVersion()).thenReturn(null);
+                when(this.configuration.getPreReleaseSuffix()).thenReturn(null);
                 
                 when(this.committer.saveVersion(same(version2))).thenReturn(true);
                 
@@ -567,6 +570,7 @@ public class VersionNumberBuilderTest {
                 assertTrue(this.builder.perform(this.build, this.launcher, this.listener));
                 
                 verify(this.configuration, times(1)).getDoOverrideVersion();
+                verify(this.configuration, times(1)).getTemporaryOverride();
                 verify(this.configuration, times(1)).getOverrideVersion();
                 verify(this.versionFactory, times(1)).buildVersionFromString(same(overrideVersion));
                 verify(this.committer, times(1)).saveVersion(same(version1));
@@ -735,7 +739,8 @@ public class VersionNumberBuilderTest {
                 final String preReleaseVersion = "rc";
                 final Version version3 = mock(Version.class);
                 when(this.configuration.getPreReleaseVersion()).thenReturn(preReleaseVersion);
-                when(this.updater.setPreReleaseVersion(same(version2), same(preReleaseVersion))).thenReturn(version3);
+                when(this.configuration.getPreReleaseSuffix()).thenReturn(null);
+                when(this.updater.setPreReleaseVersion(same(version2), eq(preReleaseVersion))).thenReturn(version3);
                 
                 when(this.committer.saveVersion(same(version3))).thenReturn(true);
                 
@@ -753,7 +758,7 @@ public class VersionNumberBuilderTest {
                 verify(this.configuration, times(1)).getBaseMinorOnEnvVariable();
                 
                 verify(this.configuration, times(1)).getPreReleaseVersion();
-                verify(this.updater, times(1)).setPreReleaseVersion(same(version2), same(preReleaseVersion));
+                verify(this.updater, times(1)).setPreReleaseVersion(same(version2), eq(preReleaseVersion));
                 
                 verify(this.committer, times(1)).saveVersion(same(version3));
                 
