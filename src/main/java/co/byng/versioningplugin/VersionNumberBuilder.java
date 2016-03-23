@@ -165,16 +165,20 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
             this.committer.saveVersion(currentVersion);
             
             if (this.getDoEnvExport()) {
-                varExporter.addVariableToExport(
-                    this.getDescriptor().getPreviousVersionEnvVariable(),
-                    previousVersion.toString()
+                final DescriptorImpl descriptor = this.getDescriptor();
+
+                this.performEnvExport(
+                    varExporter,
+                    descriptor.getPreviousVersionEnvVariable(),
+                    previousVersion
                 );
-                
-                varExporter.addVariableToExport(
-                    this.getDescriptor().getCurrentVersionEnvVariable(),
-                    currentVersion.toString()
+
+                this.performEnvExport(
+                    varExporter,
+                    descriptor.getCurrentVersionEnvVariable(),
+                    currentVersion
                 );
-                
+
                 varExporter.export(build);
             }
             
@@ -213,6 +217,33 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
         }
 
         return currentVersion;
+    }
+    
+    protected void performEnvExport(
+        final VariableExporter varExporter,
+        final String envVarName,
+        final Version version
+    ) {
+        varExporter.addVariableToExport(
+            envVarName,
+            version.toString()
+        );
+        varExporter.addVariableToExport(
+            envVarName + "_MAJOR",
+            String.valueOf(version.getMajorVersion())
+        );
+        varExporter.addVariableToExport(
+            envVarName + "_MINOR",
+            String.valueOf(version.getMinorVersion())
+        );
+        varExporter.addVariableToExport(
+            envVarName + "_PATCH",
+            String.valueOf(version.getPatchVersion())
+        );
+        varExporter.addVariableToExport(
+            envVarName + "_PRE_RELEASE",
+            version.getPreReleaseVersion()
+        );
     }
     
     protected void performSetBuildNameOrDescription(

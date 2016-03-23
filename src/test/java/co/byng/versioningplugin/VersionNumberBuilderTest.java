@@ -797,6 +797,7 @@ public class VersionNumberBuilderTest {
                 
                 when(this.committer.saveVersion(same(version2))).thenReturn(true);
                 
+                final Version[] bothVersions = new Version[]{version1, version2};
                 
                 final String previousVersionVariable = "PREVIOUS_VERSION";
                 final String currentVersionVariable = "CURRENT VERSION";
@@ -804,11 +805,29 @@ public class VersionNumberBuilderTest {
                 final String currentVersion = "Current version string";
                 when(version1.toString()).thenReturn(previousVersion);
                 when(version2.toString()).thenReturn(currentVersion);
+                
+                for (Version version : bothVersions) {
+                    when(version.getMajorVersion()).thenReturn(1);
+                    when(version.getMinorVersion()).thenReturn(2);
+                    when(version.getPatchVersion()).thenReturn(3);
+                    when(version.getPreReleaseVersion()).thenReturn("");
+                }
+                
                 when(this.configuration.getDoEnvExport()).thenReturn(true);
                 when(this.descriptor.getPreviousVersionEnvVariable()).thenReturn(previousVersionVariable);
                 when(this.descriptor.getCurrentVersionEnvVariable()).thenReturn(currentVersionVariable);
+                
                 doNothing().when(this.exporter).addVariableToExport(same(previousVersionVariable), same(previousVersion));
+                doNothing().when(this.exporter).addVariableToExport(eq(previousVersionVariable + "_MAJOR"), eq("1"));
+                doNothing().when(this.exporter).addVariableToExport(eq(previousVersionVariable + "_MINOR"), eq("2"));
+                doNothing().when(this.exporter).addVariableToExport(eq(previousVersionVariable + "_PATCH"), eq("3"));
+                doNothing().when(this.exporter).addVariableToExport(eq(previousVersionVariable + "_PRE_RELEASE"), eq(""));
+                
                 doNothing().when(this.exporter).addVariableToExport(same(currentVersionVariable), same(currentVersion));
+                doNothing().when(this.exporter).addVariableToExport(eq(currentVersionVariable + "_MAJOR"), eq("1"));
+                doNothing().when(this.exporter).addVariableToExport(eq(currentVersionVariable + "_MINOR"), eq("2"));
+                doNothing().when(this.exporter).addVariableToExport(eq(currentVersionVariable + "_PATCH"), eq("3"));
+                doNothing().when(this.exporter).addVariableToExport(eq(currentVersionVariable + "_PRE_RELEASE"), eq(""));
                 
                 assertTrue(this.builder.perform(this.build, this.launcher, this.listener));
                 
@@ -825,11 +844,29 @@ public class VersionNumberBuilderTest {
                 
                 verify(this.committer, times(1)).saveVersion(same(version2));
                 
+                for (Version version : bothVersions) {
+                    verify(version, times(1)).getMajorVersion();
+                    verify(version, times(1)).getMinorVersion();
+                    verify(version, times(1)).getPatchVersion();
+                    verify(version, times(1)).getPreReleaseVersion();
+                }
+                
                 verify(this.configuration, times(1)).getDoEnvExport();
                 verify(this.descriptor, times(1)).getPreviousVersionEnvVariable();
                 verify(this.descriptor, times(1)).getCurrentVersionEnvVariable();
+                
                 verify(this.exporter, times(1)).addVariableToExport(same(previousVersionVariable), same(previousVersion));
+                verify(this.exporter, times(1)).addVariableToExport(eq(previousVersionVariable + "_MAJOR"), eq("1"));
+                verify(this.exporter, times(1)).addVariableToExport(eq(previousVersionVariable + "_MINOR"), eq("2"));
+                verify(this.exporter, times(1)).addVariableToExport(eq(previousVersionVariable + "_PATCH"), eq("3"));
+                verify(this.exporter, times(1)).addVariableToExport(eq(previousVersionVariable + "_PRE_RELEASE"), eq(""));
+                
                 verify(this.exporter, times(1)).addVariableToExport(same(currentVersionVariable), same(currentVersion));
+                verify(this.exporter, times(1)).addVariableToExport(eq(currentVersionVariable + "_MAJOR"), eq("1"));
+                verify(this.exporter, times(1)).addVariableToExport(eq(currentVersionVariable + "_MINOR"), eq("2"));
+                verify(this.exporter, times(1)).addVariableToExport(eq(currentVersionVariable + "_PATCH"), eq("3"));
+                verify(this.exporter, times(1)).addVariableToExport(eq(currentVersionVariable + "_PRE_RELEASE"), eq(""));
+                
             } catch (Throwable t) {
                 fail(
                     "Uncaught exception (should not have been thrown): "
