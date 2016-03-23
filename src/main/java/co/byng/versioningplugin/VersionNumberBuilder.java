@@ -118,11 +118,13 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
                 currentVersion = this.versionFactory.buildVersionFromString(this.getOverrideVersion());
                 this.committer.saveVersion(currentVersion);
 
-                this.configuration
-                    .setDoOverrideVersion(false)
-                    .setOverrideVersion(null)
-                ;
-                
+                if (this.getTemporaryOverride()) {
+                    this.configuration
+                        .setDoOverrideVersion(false)
+                        .setOverrideVersion(null)
+                    ;
+                }
+
             } else {
                 currentVersion = this.retriever.loadVersion();
             }
@@ -315,6 +317,11 @@ public class VersionNumberBuilder extends Builder implements VersioningConfigura
     @Override
     public String getOverrideVersion() {
         return this.configuration.getOverrideVersion();
+    }
+
+    @Override
+    public boolean getTemporaryOverride() {
+        return this.configuration.getTemporaryOverride();
     }
 
     @Override

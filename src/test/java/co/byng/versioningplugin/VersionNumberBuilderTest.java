@@ -541,6 +541,7 @@ public class VersionNumberBuilderTest {
                 final String overrideVersion = "1.0.0";
                 final Version version1 = mock(Version.class);
                 when(this.configuration.getDoOverrideVersion()).thenReturn(true);
+                when(this.configuration.getTemporaryOverride()).thenReturn(true);
                 when(this.configuration.getOverrideVersion()).thenReturn(overrideVersion);
                 when(this.versionFactory.buildVersionFromString(same(overrideVersion))).thenReturn(version1);
                 when(this.committer.saveVersion(same(version1))).thenReturn(true);

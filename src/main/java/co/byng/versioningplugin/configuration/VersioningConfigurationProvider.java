@@ -32,6 +32,8 @@ public interface VersioningConfigurationProvider {
     public boolean getDoOverrideVersion();
 
     public String getOverrideVersion();
+    
+    public boolean getTemporaryOverride();
 
     public String getPropertyFilePath();
 

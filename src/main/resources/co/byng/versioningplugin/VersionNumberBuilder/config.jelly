@@ -7,8 +7,11 @@
         inline="true"
         checked="${instance.doOverrideVersion}"
     >
-        <f:entry title="New version field to set" field="overrideVersion">
+        <f:entry title="New version to set" field="overrideVersion">
             <f:textbox default="1.0.0"/>
+        </f:entry>
+        <f:entry title="Only apply this override on the next build" field="temporaryOverride">
+            <f:checkbox checked="${instance.temporaryOverride}"/>
         </f:entry>
     </f:optionalBlock>
     

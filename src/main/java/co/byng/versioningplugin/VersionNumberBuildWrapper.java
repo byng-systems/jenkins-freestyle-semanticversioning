@@ -55,6 +55,7 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
     public VersionNumberBuildWrapper(
         boolean doOverrideVersion,
         String overrideVersion,
+        boolean temporaryOverride,
         String propertyFilePath,
         boolean baseMajorOnEnvVariable,
         String majorEnvVariable,
@@ -124,6 +125,11 @@ public class VersionNumberBuildWrapper extends BuildWrapper implements Versionin
         return this.builder.getOverrideVersion();
     }
 
+    @Override
+    public boolean getTemporaryOverride() {
+        return this.builder.getTemporaryOverride();
+    }
+    
     @Override
     public String getPropertyFilePath() {
         return this.builder.getPropertyFilePath();

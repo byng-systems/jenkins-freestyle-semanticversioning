@@ -31,6 +31,7 @@ package co.byng.versioningplugin.configuration;
     
     protected boolean doOverrideVersion = true;
     protected String overrideVersion;
+    protected boolean temporaryOverride = false;
     protected String propertyFilePath;
     protected boolean baseMajorOnEnvVariable;
     protected String majorEnvVariable;
@@ -52,6 +53,10 @@ package co.byng.versioningplugin.configuration;
     @Override
     public String getOverrideVersion() {
         return overrideVersion;
+    }
+
+    public boolean getTemporaryOverride() {
+        return temporaryOverride;
     }
 
     @Override

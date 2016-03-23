@@ -69,6 +69,7 @@ public class VersionNumberBuildWrapperTest {
         public void testPropertyConstructorCreatesDefaultConfiguredBuilder() {
             final boolean doOverrideVersion = true;
             final String overrideVersion = "OVERRIDE VERSION";
+            final boolean temporaryOverride = false;
             final String propertyFilePath = "PROPERTY FILE PATH";
             final boolean baseMajorOnEnvVariable = false;
             final String majorEnvVariable = "MAJOR ENVVAR";
@@ -84,6 +85,7 @@ public class VersionNumberBuildWrapperTest {
             final VersionNumberBuildWrapper buildWrapper = new VersionNumberBuildWrapper(
                 doOverrideVersion,
                 overrideVersion,
+                temporaryOverride,
                 propertyFilePath,
                 baseMajorOnEnvVariable,
                 majorEnvVariable,
@@ -106,6 +108,7 @@ public class VersionNumberBuildWrapperTest {
 
             assertSame(doOverrideVersion, configuration.getDoOverrideVersion());
             assertSame(overrideVersion, configuration.getOverrideVersion());
+            assertSame(temporaryOverride, configuration.getTemporaryOverride());
             assertSame(propertyFilePath, configuration.getPropertyFilePath());
             assertSame(baseMajorOnEnvVariable, configuration.getBaseMajorOnEnvVariable());
             assertSame(majorEnvVariable, configuration.getMajorEnvVariable());
